@@ -1,0 +1,3 @@
+[submodule "koinu"]
+	path = koinu
+	url = https://github.com/xanimo/koinu.git

@@ -1,0 +1,78 @@
+# Builds koinu.dog and publishes it.
+#
+# koinu.wasm is not in the repository (.gitignore), so this builds it from
+# kw_web.c and the crypto/ and net/ sources in the koinu submodule, at whatever
+# commit the submodule is pinned to. That is the point of building here rather
+# than uploading a module somebody made locally: the wasm the page runs is
+# compiled from the koinu commit this site pins, so "the same files kw links" is
+# checkable rather than claimed.
+#
+# The build is reproducible: build.sh with ziglang 0.17.0 and the pinned
+# submodules gives a byte-identical koinu.wasm, so the sha256 this prints can be
+# compared against a local run.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and let a run in progress finish: a cancelled deploy can
+# leave the site on a half-uploaded artifact.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      # pinned by sha: a tag is mutable and this workflow publishes
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          submodules: recursive          # koinu, and secp256k1 inside it
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.12'
+
+      # zig is the wasm32-wasi cross compiler; the pypi package is the toolchain
+      - run: pip install ziglang==0.17.0
+
+      - name: which koinu this is built from
+        run: git -C koinu log --oneline -1
+
+      - run: ./build.sh
+
+      - name: the wasm this deploy is publishing
+        run: sha256sum koinu.wasm
+
+      # Only the three files the page fetches. The repository root also holds
+      # kw_web.c, build.sh and the whole koinu submodule, and none of that
+      # belongs on a web server.
+      - name: stage the site
+        run: |
+          mkdir -p _site
+          cp index.html koinu.js koinu.wasm _site/
+          ls -l _site
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

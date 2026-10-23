@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>koinu</title>
+<meta name="description" content="koinu: a dogecoin wallet in c, built from the crypto up, and a walk through how a wallet works. mit licensed, free.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500&family=Ubuntu+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff;
+  --fg: #111214;
+  --dim: #6b6f76;
+  --rule: #e6e8eb;
+  --code: #f4f5f7;
+  --accent: #c99a06;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0c0e;
+    --fg: #e6e8eb;
+    --dim: #8a8f98;
+    --rule: #1f2227;
+    --code: #15171a;
+    --accent: #e0b022;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 17px/1.65 "Ubuntu", system-ui, sans-serif;
+}
+main { max-width: 700px; margin: 0 auto; padding: 48px 20px 80px; }
+header { margin-bottom: 48px; }
+.mark { display: inline-block; font-weight: 500; font-size: 22px; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; margin-bottom: 14px; }
+.mark span { color: var(--accent); }
+nav { display: flex; gap: 4px 14px; flex-wrap: wrap; align-items: baseline; margin-bottom: 4px; }
+nav b { font-weight: 400; color: var(--dim); font-size: 13px; width: 44px; font-family: "Ubuntu Mono", monospace; }
+nav a { color: var(--dim); text-decoration: none; font-size: 15px; }
+nav a:hover, nav a[aria-current="page"] { color: var(--fg); }
+nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+h1 { font-weight: 500; font-size: 30px; line-height: 1.25; margin: 0 0 20px; letter-spacing: -0.015em; }
+h2 { font-weight: 500; font-size: 18px; margin: 44px 0 10px; }
+p { margin: 0 0 16px; }
+a { color: var(--fg); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+code, pre { font-family: "Ubuntu Mono", ui-monospace, monospace; font-size: 15.5px; }
+code { background: var(--code); padding: 1px 5px; border-radius: 3px; }
+pre { background: var(--code); padding: 14px 16px; border-radius: 4px; overflow-x: auto; margin: 0 0 20px; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+pre .c { color: var(--dim); }
+.dim { color: var(--dim); }
+.kicker { font-size: 14px; color: var(--dim); margin: 0 0 6px; font-family: "Ubuntu Mono", monospace; }
+.src { font-size: 14px; color: var(--dim); margin: -8px 0 20px; }
+.src a { color: var(--dim); font-family: "Ubuntu Mono", monospace; }
+ul.plain, ol.plain { list-style: none; padding: 0; margin: 0 0 20px; }
+ul.plain li, ol.plain li { padding: 7px 0; border-top: 1px solid var(--rule); }
+ul.plain li:last-child, ol.plain li:last-child { border-bottom: 1px solid var(--rule); }
+ol.plain { counter-reset: n; }
+ol.plain li { counter-increment: n; display: grid; grid-template-columns: 28px 1fr; }
+ol.plain li::before { content: counter(n); color: var(--dim); font-family: "Ubuntu Mono", monospace; }
+ol.toc li a { text-decoration: none; }
+ol.toc li span { color: var(--dim); }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0 0 20px; }
+dt { font-family: "Ubuntu Mono", monospace; }
+dd { margin: 0; color: var(--dim); }
+.note { border-left: 2px solid var(--accent); padding: 2px 0 2px 14px; margin: 0 0 20px; }
+.pager { margin-top: 52px; padding-top: 16px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.pager a { color: var(--fg); text-decoration: none; }
+.pager a span { color: var(--dim); display: block; font-size: 13px; }
+.pager .r { text-align: right; margin-left: auto; }
+footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+footer a { color: var(--dim); }
+.try { border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px 16px; margin: 8px 0 28px; }
+.try-h { font-family: "Ubuntu Mono", monospace; font-size: 14px; margin: 0 0 12px; }
+.try-h span { color: var(--dim); font-family: "Ubuntu", sans-serif; display: block; font-size: 13px; }
+.try label { display: block; font-size: 13px; color: var(--dim); margin: 0 0 10px; flex: 1 1 140px; min-width: 0; }
+.try input, .try textarea, .try select { display: block; width: 100%; margin-top: 4px; font: 14px/1.4 "Ubuntu Mono", ui-monospace, monospace; color: var(--fg); background: var(--code); border: 1px solid var(--rule); border-radius: 4px; padding: 7px 9px; resize: vertical; }
+.try input:focus, .try textarea:focus, .try select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.try .row { display: flex; gap: 0 12px; flex-wrap: wrap; }
+.try .warn { font-size: 13px; color: var(--dim); margin: 2px 0 12px; }
+.try .warn a { color: var(--dim); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.try button { font: 14px "Ubuntu", sans-serif; color: var(--bg); background: var(--fg); border: 0; border-radius: 4px; padding: 7px 12px; cursor: pointer; }
+.try button + button { color: var(--fg); background: transparent; border: 1px solid var(--rule); }
+.try button:hover { opacity: .85; }
+.out:not(:empty) { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.kv { display: grid; grid-template-columns: 9.5em 1fr; gap: 2px 12px; padding: 3px 0; font-size: 14px; }
+.kv > span { color: var(--dim); }
+.kv > code { background: none; padding: 0; word-break: break-all; font-size: 14px; }
+.kv > code em { font-style: normal; color: var(--dim); }
+.kv.good > code { color: #2f8f4e; } .kv.bad > code { color: #c4402f; }
+.share { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--rule); font: 13px/1.5 "Ubuntu Mono", monospace; word-break: break-word; }
+.share input { width: auto; margin-top: 3px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.try .chips button { font: 12px "Ubuntu Mono", monospace; padding: 3px 7px; color: var(--fg); background: transparent; border: 1px solid var(--rule); }
+.vals { font: 13px/1.6 "Ubuntu Mono", monospace; color: var(--dim); word-break: break-word; }
+.vals b { font-weight: 400; color: var(--fg); background: color-mix(in srgb, var(--accent) 30%, transparent); padding: 0 3px; border-radius: 2px; }
+@media (max-width: 520px) { .kv { grid-template-columns: 1fr; } .kv > span { margin-top: 4px; } }
+section[hidden] { display: none; }
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  h1 { font-size: 26px; }
+  code, pre { font-size: 14px; }
+  dl { grid-template-columns: 1fr; gap: 0 0; }
+  dd { margin-bottom: 10px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="mark" href="#/">koinu<span>.</span></a>
+    <nav>
+      <b>use</b>
+      <a href="#/start">start</a>
+      <a href="#/spend">spend</a>
+      <a href="#/backup">backup</a>
+      <a href="#/kwd">kwd</a>
+      <a href="#/kwui">kwui</a>
+      <a href="#/library">library</a>
+      <a href="#/verify">verify</a>
+      <a href="https://github.com/xanimo/koinu">source</a>
+    </nav>
+    <nav>
+      <b>learn</b>
+      <a href="#/learn">contents</a>
+      <a href="#/learn/keys">keys</a>
+      <a href="#/learn/keystore">keystore</a>
+      <a href="#/learn/memory">memory</a>
+      <a href="#/learn/transactions">transactions</a>
+      <a href="#/learn/shares">shares</a>
+      <a href="#/learn/headers">headers</a>
+      <a href="#/learn/auxpow">auxpow</a>
+      <a href="#/learn/filters">filters</a>
+      <a href="#/learn/peers">peers</a>
+      <a href="#/learn/boundary">boundary</a>
+      <a href="#/learn/threats">threats</a>
+    </nav>
+  </header>
+
+  <!-- ───────────────────────── home ───────────────────────── -->
+  <section data-route="/">
+    <h1>a dogecoin wallet in c, built from the crypto up.</h1>
+    <p>koinu is mit licensed and free. there is no account, no server, no telemetry and no fee. it is also meant to be read: every primitive it uses is in the tree, small enough to follow, and checked against published vectors, so the wallet doubles as a worked example of how a wallet works.</p>
+    <p>libsecp256k1 is the only submodule. sha2, ripemd160, hmac, pbkdf2, scrypt, argon2id, chacha20-poly1305, siphash, base58 and the bip158 golomb set live in <code>crypto/</code>, either vendored from a named upstream at a named commit or written here, and frozen.</p>
+    <p>one rule shapes the rest: the process holding keys is never the process talking to peers. the signing library references no function that can open a connection, and the build fails if one appears.</p>
+
+    <h2>two ways in</h2>
+    <p><a href="#/start">use it</a>: build, make a wallet, back it up, spend. the commands and what each one guarantees.</p>
+    <p><a href="#/learn">learn from it</a>: eleven short chapters that start at 256 random bits and end at choosing between three peers' chains, quoting the code that does each step and linking the file it lives in.</p>
+
+    <h2>what it does</h2>
+    <ul class="plain">
+      <li>bip39 mnemonics of 12 or 24 words, bip32 derivation, bip44 accounts, seed sealed under argon2id and chacha20-poly1305</li>
+      <li>p2pkh addresses, wif import, base58check on mainnet, testnet and regtest</li>
+      <li>legacy transaction building and signing, byte for byte against libdogecoin's signer on 322 spends the network already accepted</li>
+      <li>p2sh multisig co-signing, and the bip174 psbt subset dogecoin needs</li>
+      <li>slip-39 and codex32 seed backups, threshold and grouped</li>
+      <li>header sync checking scrypt work, auxpow, digishield, median time past and compiled-in anchors</li>
+      <li>bip157/158 compact filters verified against the peer's filter-header chain, or full-block spv where no peer serves filters</li>
+      <li>tor through socks5 with a fresh credential pair per connection</li>
+      <li>kwd, a daemon answering outpoint queries over a unix socket, and kwui, a terminal view that never touches the network</li>
+    </ul>
+  </section>
+
+  <!-- ───────────────────────── use: start ───────────────────────── -->
+  <section data-route="/start" hidden>
+    <p class="kicker">use / start</p>
+    <h1>build, then make a wallet</h1>
+<pre><code>git clone --recursive https://github.com/xanimo/koinu
+cd koinu
+make check      <span class="c"># builds libkw.a and kw, runs the tests</span>
+make asan       <span class="c"># the same under address and ub sanitizers</span></code></pre>
+    <p><code>--recursive</code> is not optional. libsecp256k1 is a submodule, so a plain clone leaves <code>depends/secp256k1</code> empty and the build stops on a missing <code>secp256k1.h</code>. in a clone you already have, run <code>git submodule update --init</code>. check a release tag against the key on the <a href="#/verify">verify</a> page before building it.</p>
+    <p>the suite is 43 binaries, every primitive against published vectors where they exist, and the fuzz corpus replays its seeds under asan and ubsan before mutating. ci runs it on linux x86_64 under gcc and clang, on linux i386 and on macos arm64.</p>
+<pre><code>make split                      <span class="c"># libkoinu-sign.a and libkoinu-chain.a</span>
+make install PREFIX=/usr/local  <span class="c"># archives, headers, pkg-config, kw kwd kwui</span></code></pre>
+
+    <h2>a wallet</h2>
+<pre><code>kw new     --keystore w.ks               <span class="c"># generate, seal, show the mnemonic</span>
+kw restore --keystore w.ks --mnemonic -  <span class="c"># seal an existing mnemonic</span>
+kw address --keystore w.ks               <span class="c"># derive m/44'/3'/0'/0/index</span>
+kw export xpub --keystore w.ks           <span class="c"># the account public key</span></code></pre>
+    <p>the mnemonic is printed once and never stored, so the words are the only backup. <code>kw new</code> asks for four of them back before it writes anything. how the words become keys is the <a href="#/learn/keys">keys</a> chapter; how the keystore seals them is <a href="#/learn/keystore">keystore</a>.</p>
+    <p>passphrases, mnemonics and private keys are read from a file (<code>@path</code>), stdin (<code>-</code>) or a no-echo prompt. a bare value on the command line is refused, because argv is readable by any process on the machine. <code>--testnet</code> and <code>--regtest</code> switch networks; <code>--tor</code> routes every connection through socks5 at <code>127.0.0.1:9050</code> and resolves names through it.</p>
+    <div class="pager"><a class="r" href="#/backup"><span>next</span>back it up</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: backup ───────────────────────── -->
+  <section data-route="/backup" hidden>
+    <p class="kicker">use / backup</p>
+    <h1>backup</h1>
+    <p>a backup you have never checked is a guess, and checking one used to mean restoring it somewhere, which is how checking a backup becomes the thing that loses it. <code>kw backup verify</code> derives the seed the typed words give, opens the keystore, and compares the two in constant time, printing neither. a mismatch exits 3.</p>
+<pre><code>kw backup verify --keystore w.ks --mnemonic @phrase.txt
+kw backup verify --mnemonic @phrase.txt   <span class="c"># no wallet: fingerprint and first address</span></code></pre>
+
+    <h2>shares</h2>
+<pre><code>kw backup split   --keystore w.ks --groups 2of3
+kw backup split   --keystore w.ks --groups 1of1,2of3 --group-threshold 1
+kw backup combine --keystore new.ks --shares @shares.txt</code></pre>
+    <p>split prints the seed as slip-39 shares to stdout. <code>2of3</code> is three shares needing two. groups nest a second threshold over the first: <code>1of1,2of3</code> with group threshold 1 is "your own share, or two of the family's", and with 2 it is "your share and two of the family's". combine seals a keystore from exactly a threshold, refusing a spare share, and never prints the seed; to check a set, point it at a scratch path and compare the fingerprint.</p>
+    <p>a 64-byte seed makes 59-word shares, which other slip-39 software combines and trezor firmware will not accept. <code>--backup-passphrase</code> is a third secret, and a wrong one yields a different wallet rather than an error.</p>
+<pre><code>kw backup split --keystore w.ks --format codex32 --groups 3of5 --id kw00</code></pre>
+    <p>codex32 writes the same split as bip-93 strings, checkable with a pen and a printed table. one flat threshold of 2 to 9, up to 22 shares, no passphrase, no grouping. why the two formats trade off as they do is the <a href="#/learn/shares">shares</a> chapter.</p>
+    <div class="pager"><a href="#/start"><span>previous</span>start</a><a class="r" href="#/spend"><span>next</span>spend</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: spend ───────────────────────── -->
+  <section data-route="/spend" hidden>
+    <p class="kicker">use / spend</p>
+    <h1>spend</h1>
+<pre><code>kw scan --keystore w.ks --node NODE --headers h --filters f
+kw sign --keystore w.ks --to DEST:100
+kw send --tx @tx.hex --node NODE          <span class="c"># decodes it and asks first</span></code></pre>
+    <p>scan watches the first <code>--gap</code> receive and change addresses, extends the range until enough unused ones trail the highest used, and writes the utxo set beside the keystore. it forgets the seed and master key before it connects. sign selects inputs and builds the transaction; send broadcasts it. <code>sign --raw</code> puts the transaction alone on stdout and the decoded outputs and fee on stderr, so it pipes without losing the readback:</p>
+<pre><code>kw sign --keystore w.ks --to DEST:100 --raw | kw send --tx - --node NODE --yes</code></pre>
+
+    <h2>what send's exit code means</h2>
+    <p>a node acknowledges nothing it accepts, so send asks for the mempool afterwards and looks for the transaction.</p>
+    <dl>
+      <dt>0</dt><dd>broadcast: the node listed it</dd>
+      <dt>4</dt><dd>unknown: no reject, not listed (an orphan, or a repeat of something already rejected)</dd>
+      <dt>1</dt><dd>rejected, with the node's reason</dd>
+    </dl>
+    <p>the fee defaults to the peer's advertised relay floor captured during scan; <code>--feerate</code> sets a rate and <code>--fee</code> an exact amount. change below the dust limit goes to the fee. change goes to the first address the utxo set and the journal agree is unused, and signing records it, so consecutive spends do not share one.</p>
+
+    <h2>air-gapped</h2>
+<pre><code>kw psbt build   --xpub XPUB --utxos u --to DEST:100   <span class="c"># online, cannot sign</span>
+kw psbt sign    --psbt @psbt.hex --keystore w.ks      <span class="c"># offline, opens no socket</span>
+kw psbt extract --psbt @signed.hex | kw send --tx - --node NODE --yes</code></pre>
+    <p>the signer takes each input's amount and script from a previous transaction carried in the psbt, after requiring those bytes to hash to the outpoint being spent. why that matters for a legacy chain is in <a href="#/learn/transactions">transactions</a>.</p>
+
+    <h2>sweep</h2>
+<pre><code>kw sweep --watch ADDR --utxos u --node NODE --spv   <span class="c"># finds the coins, reads no key</span>
+kw sweep --wif @k --to DEST --utxos u               <span class="c"># signs, opens no socket</span>
+kw send  --tx @tx.hex --node NODE</code></pre>
+    <p>two runs so the one holding the key never opens a socket. passing both halves at once is refused, and the signing step drops any output not locked to the key it holds.</p>
+
+    <h2>multisig</h2>
+<pre><code>kw cosign --tx HEX --redeem HEX --wif @k           <span class="c"># one signature for the counterparty</span>
+kw cosign --tx HEX --redeem HEX --wif @k --finish  <span class="c"># assemble, checking every signature</span>
+kw psbt create | tx | sign | combine | sigs | finalize | extract</code></pre>
+    <p>cosign --finish verifies each collected signature against the sighash and refuses the set if one fails. psbt finalize writes the scriptSig it is given, because scripts like a payment channel's OP_IF branch do not classify for a standard finalizer; it cannot verify that, so the caller does. combine refuses a conflict rather than picking a side, and a psbt carrying segwit or unknown fields is refused rather than parsed with those fields dropped.</p>
+    <div class="pager"><a href="#/backup"><span>previous</span>backup</a><a class="r" href="#/kwd"><span>next</span>kwd</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: kwd ───────────────────────── -->
+  <section data-route="/kwd" hidden>
+    <p class="kicker">use / kwd</p>
+    <h1>kwd</h1>
+    <p>kw loads the header cache on every invocation, about 1.3 s and growing with the height. kwd pays that once, holds the chain and its peers open, and answers outpoint queries over a unix socket: confirmed or not, to what depth, spent or not. it holds no keys and opens no keystore, so a compromised kwd can lie about a confirmation and cannot sign.</p>
+<pre><code>kwd --node NODE --headers h --filters f --socket /run/kwd.sock
+kw outpoint --daemon /run/kwd.sock --watch ADDR --outpoint TXID:VOUT --since H</code></pre>
+    <p>measured against mainnet at height 6380305 with a filter cache from a node serving bip158:</p>
+<pre><code>8 to 25 ms      repeated query
+287 ms          80000 block range
+2884 ms         first request after startup (pays the delta sync)
+1572 ms         46 blocks with no filters, fetching every block</code></pre>
+    <p>the first number sizes a budget and the last sizes a range. where the peer serves no filters, which is every stock 1.14 node, kwd says so and answers from blocks, so a request costs every block from its since height to the tip. a request with no since height is refused rather than read as zero. a coinbase output under maturity reports "unspent but immature" and exits 5.</p>
+    <p>the socket is created 0600 with no group and no mode option. whatever asks has to run as kwd's user; another account gets permission denied on a path that otherwise looks right.</p>
+    <div class="pager"><a href="#/spend"><span>previous</span>spend</a><a class="r" href="#/kwui"><span>next</span>kwui</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: kwui ───────────────────────── -->
+  <section data-route="/kwui" hidden>
+    <p class="kicker">use / kwui</p>
+    <h1>kwui</h1>
+    <p>a terminal view of a wallet: the balance, and every derived address with what it holds. it reads the keystore and the utxo set <code>kw scan</code> wrote and never connects to a peer, so the process holding keys is not the process talking to them.</p>
+<pre><code>kwui --keystore w.ks</code></pre>
+    <dl>
+      <dt>j / k</dt><dd>move</dd>
+      <dt>u</dt><dd>hide addresses nothing has paid</dd>
+      <dt>s</dt><dd>compose a spend</dd>
+      <dt>q</dt><dd>quit</dd>
+    </dl>
+    <p>a spend asks for a destination and amount, shows the fee and change before anything is signed, asks for the passphrase again as the last confirmation, and writes the signed transaction out for <code>kw send</code>.</p>
+    <div class="pager"><a href="#/kwd"><span>previous</span>kwd</a><a class="r" href="#/library"><span>next</span>library</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: library ───────────────────────── -->
+  <section data-route="/library" hidden>
+    <p class="kicker">use / library</p>
+    <h1>library</h1>
+    <dl>
+      <dt>libkoinu-sign.a</dt><dd>keys, derivations, share formats, keystore, transaction builder, psbt, utxo tracking. references no function that can open a connection.</dd>
+      <dt>libkoinu-chain.a</dt><dd>peers, headers, auxpow, difficulty, filters. depends on the signing half, never the reverse.</dd>
+    </dl>
+<pre><code>#include &lt;koinu/koinu-sign.h&gt;
+cc prog.c $(pkg-config --cflags --libs koinu-sign) -lsecp256k1</code></pre>
+    <p>secp256k1 is yours to provide. the tree builds its own from a pinned submodule and does not install it, since a second libsecp256k1 on a system is how a program links two of them with no warning.</p>
+    <p>there is no shared library and no abi promise. the header types are transparent structs that still change (<code>kw_utxo</code> grew two fields when amounts were bound to their transactions), so pin a commit and build from source. neither archive exports a name outside <code>kw_</code> and <code>KW_</code>; the vendored argon2 and poly1305-donna arrive with <code>initialize</code>, <code>finalize</code> and 53 others, which <code>crypto/vendor/kw_symbols.h</code> renames at compile time rather than patching the vendored sources. the library prints nothing unless the caller installs a log sink.</p>
+    <p>how the split is enforced is the <a href="#/learn/boundary">boundary</a> chapter.</p>
+    <div class="pager"><a href="#/kwui"><span>previous</span>kwui</a><a class="r" href="#/verify"><span>next</span>verify</a></div>
+  </section>
+
+  <!-- ───────────────────────── use: verify ───────────────────────── -->
+  <section data-route="/verify" hidden>
+    <p class="kicker">use / verify</p>
+    <h1>verify a release</h1>
+    <p>release tags are signed with this pgp key:</p>
+<pre><code>00D7 BCFF 5778 2D5D 91D6  281A 0DC6 4171 D69D 92F4</code></pre>
+<pre><code>gpg --recv-keys 00D7BCFF57782D5D91D6281A0DC64171D69D92F4
+git tag -v v0.3.0</code></pre>
+    <p>if the fingerprint on your screen does not match the one above, stop. the key is also in the tree at <a href="https://github.com/xanimo/koinu/blob/main/docs/bluezr.asc">docs/bluezr.asc</a>, which only helps if you already trust the tree. report vulnerabilities through <a href="https://github.com/xanimo/koinu/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+    <div class="pager"><a href="#/library"><span>previous</span>library</a><a class="r" href="#/learn"><span>next</span>learn</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: contents ───────────────────────── -->
+  <section data-route="/learn" hidden>
+    <p class="kicker">learn</p>
+    <h1>how a wallet works, read through koinu</h1>
+    <p>a wallet is three jobs that are easy to blur together: keep a secret, sign with it, and find out what the chain says about the addresses it controls. the first two never need a network and the third never needs a key. most of what is careful in koinu follows from refusing to let those jobs share a process.</p>
+    <p>each chapter explains one step, quotes the code that does it, and links the file. the code is c, but the excerpts are short and the ideas carry to any language. read in order or jump in.</p>
+    <ol class="plain toc">
+      <li><span><a href="#/learn/keys">keys</a> <span>&middot; entropy to words to seed to an address beginning with D</span></span></li>
+      <li><span><a href="#/learn/keystore">keystore</a> <span>&middot; sealing a seed with a passphrase, 52 bytes of header at a time</span></span></li>
+      <li><span><a href="#/learn/memory">memory</a> <span>&middot; zeroing that the compiler cannot remove, mlock that counts, no core files</span></span></li>
+      <li><span><a href="#/learn/transactions">transactions</a> <span>&middot; what a legacy signature commits to, and the amount it does not</span></span></li>
+      <li><span><a href="#/learn/shares">shares</a> <span>&middot; splitting a seed so that fewer than a threshold is nothing at all</span></span></li>
+      <li><span><a href="#/learn/headers">headers</a> <span>&middot; scrypt, nBits, work, and dogecoin's off-by-one retarget</span></span></li>
+      <li><span><a href="#/learn/auxpow">auxpow</a> <span>&middot; checking work borrowed from another chain</span></span></li>
+      <li><span><a href="#/learn/filters">filters</a> <span>&middot; finding your coins without telling a peer which they are</span></span></li>
+      <li><span><a href="#/learn/peers">peers</a> <span>&middot; choosing a chain when you cannot trust who serves it</span></span></li>
+      <li><span><a href="#/learn/boundary">boundary</a> <span>&middot; a build that fails if signing code can open a socket</span></span></li>
+      <li><span><a href="#/learn/threats">threats</a> <span>&middot; what all of that defends, and what it does not</span></span></li>
+    </ol>
+    <p>chapters 1, 2, 4, 5, 6, 7 and 8 have panels that run koinu's own c in the page: the same files kw links, compiled to webassembly by <a href="https://github.com/xanimo/koinu.dog/blob/main/build.sh">build.sh</a> with a small shim, <a href="https://github.com/xanimo/koinu.dog/blob/main/kw_web.c">kw_web.c</a>, that turns strings into calls and results into json. two things differ from the native build, and the shim says so in its first comment: randomness comes from the browser's <code>crypto.getRandomValues</code>, and nothing is mlock'd, because wasm memory has no pages to pin. it is a teaching build, not a wallet.</p>
+    <p class="dim">the full threat model is <a href="https://github.com/xanimo/koinu/blob/main/docs/threat-model.md">docs/threat-model.md</a> and every vendored primitive's origin is in <a href="https://github.com/xanimo/koinu/blob/main/docs/PROVENANCE.md">docs/PROVENANCE.md</a>. both are worth reading whole.</p>
+    <div class="pager"><a class="r" href="#/learn/keys"><span>start</span>1. keys</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: keys ───────────────────────── -->
+  <section data-route="/learn/keys" hidden>
+    <p class="kicker">learn / 1</p>
+    <h1>keys</h1>
+    <p>everything a wallet controls comes from one random number. the steps from there to an address are each a published standard, and each is a small file in <code>crypto/</code>.</p>
+
+    <h2>entropy</h2>
+    <p>128 or 256 bits come from <code>getrandom(2)</code>, falling back to <code>/dev/urandom</code> only on a kernel too old to have it. a short read fails rather than returning less than was asked for, because a key with fewer random bits than it claims looks exactly like a good one.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/rng.c">crypto/rng.c</a></p>
+
+    <h2>words (bip39)</h2>
+    <p>append a checksum (the first bits of the entropy's sha-256, one per 32 bits of entropy) and cut the result into 11-bit pieces. each piece indexes a 2048-word list, so 128 bits make 12 words and 256 make 24. the words are an encoding of the entropy, with a checksum so a mistyped word is caught.</p>
+    <p>the seed is not the entropy. it is pbkdf2-hmac-sha512 with the words as the password, the string <code>"mnemonic"</code> plus an optional passphrase as the salt, and 2048 rounds:</p>
+<pre><code>memcpy(salt, "mnemonic", 8);
+memcpy(salt + 8, passphrase, plen);
+
+int ok = kw_pbkdf2_hmac_sha512((const uint8_t *)norm, mlen,
+                               salt, saltlen, 2048, seed, KW_BIP39_SEED_LEN);</code></pre>
+    <p>so a passphrase does not unlock the wallet, it selects a different one. every passphrase yields a valid wallet, which is why a wrong one restores an empty wallet rather than an error. the wordlist is checked in the tests to reproduce the canonical file byte for byte, by sha-256.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/bip39.c">crypto/bip39.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/pbkdf2.c">crypto/pbkdf2.c</a></p>
+
+    <h2>a tree of keys (bip32)</h2>
+    <p>the master key is hmac-sha512 keyed with the string <code>"Bitcoin seed"</code> over the 64-byte seed. the left 32 bytes are the private key and the right 32 are the chain code, extra entropy that every child derivation mixes in.</p>
+<pre><code>kw_hmac_sha512((const uint8_t *)"Bitcoin seed", 12, seed, seedlen, I);</code></pre>
+    <p>a child is hmac-sha512 under the parent's chain code, whose left half is added to the parent key mod the curve order. a hardened child (index at or above 2<sup>31</sup>, written with a <code>'</code>) hashes the parent's private key; a normal child hashes the parent's public key, which is why an extended public key can walk normal children and never hardened ones.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/bip32.c">crypto/bip32.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/ec.c">crypto/ec.c</a></p>
+
+    <h2>a path (bip44)</h2>
+<pre><code>m / 44' / 3' / 0' / change / index
+     |     |    |     |        └ the nth address
+     |     |    |     └ 0 for receive, 1 for change
+     |     |    └ account
+     |     └ coin type: dogecoin is 3
+     └ purpose: this layout</code></pre>
+    <p>the last two levels are normal, so <code>kw export xpub</code> gives the account public key and <code>kw scan --xpub</code> can derive every address the account will ever use with no private key in the process. that also says what an xpub costs: it cannot spend, but whoever holds it sees every address, past and future, and can tie them together.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/bip44.c">crypto/bip44.c</a></p>
+
+    <h2>an address</h2>
+    <p>take the 33-byte compressed public key, hash it with sha-256 then ripemd-160 (together, hash160), prefix the version byte <code>0x1e</code>, and append the first four bytes of a double sha-256 as a checksum. base58 the 25 bytes and the version byte makes the first character a D. the address is a hash of the key, so the key itself appears on chain only when the coin is spent.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/address.c">crypto/address.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/base58.c">crypto/base58.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/chainparams.c">crypto/chainparams.c</a></p>
+
+    <div class="try" data-panel="keys">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <label>mnemonic<textarea name="mnemonic" rows="3" spellcheck="false" >abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about</textarea></label>
+      <div class="row">      <label>passphrase (bip39, optional)<input name="pass" value="" spellcheck="false" autocomplete="off" ></label>      <label>change<input name="change" value="0" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>index<input name="index" value="0" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <p class="warn">a web page is not where a real mnemonic belongs. use test words. the twelve above are the standard test phrase, and kw derives the same address from them.</p>
+      <div class="btns"><button type="button" data-act="keys">derive</button><button type="button" data-act="generate">new 12 words</button><button type="button" data-act="generate24">new 24 words</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+    <div class="pager"><a href="#/learn"><span>contents</span>learn</a><a class="r" href="#/learn/keystore"><span>next</span>2. keystore</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: keystore ───────────────────────── -->
+  <section data-route="/learn/keystore" hidden>
+    <p class="kicker">learn / 2</p>
+    <h1>keystore</h1>
+    <p>the seed has to live on disk between runs. the keystore stretches a passphrase into a key with argon2id and encrypts the 64-byte seed under chacha20-poly1305. it stores the seed, not the words, and the words cannot be derived back from it.</p>
+<pre><code>offset  size  field
+     0     4  magic "DWKS"
+     4     4  version, kdf id, aead id, reserved
+     8    12  argon2 t_cost, m_cost_kib, parallelism
+    20    16  salt          <span class="c">random per seal</span>
+    36    12  nonce         <span class="c">random per seal</span>
+    48     4  ct_len
+  ── the 52 bytes above are authenticated ──
+    52     n  ciphertext
+  52+n    16  poly1305 tag</code></pre>
+    <p>the default cost is three passes over 64 MiB. argon2id is memory-hard, so guessing passphrases on a gpu costs memory per guess rather than only arithmetic.</p>
+
+    <h2>the header is the associated data</h2>
+<pre><code><span class="c">/* header is the AAD, so version and kdf params are tamper-evident */</span>
+kw_chacha20poly1305_encrypt(key, nonce, out, KS_HDR,
+                            secret, secretlen,
+                            out + KS_HDR, out + KS_HDR + secretlen);</code></pre>
+    <p>an aead authenticates bytes it does not encrypt. passing the header as that data means someone who edits the file to lower the argon2 cost, or swap the salt, gets a tag that no longer verifies. without it, an attacker with write access could downgrade the kdf and wait for you to re-seal.</p>
+
+    <h2>check before the expensive part</h2>
+<pre><code><span class="c">/* before the KDF runs, since the tag is only checkable after it */</span>
+if (t > KW_KEYSTORE_MAX_T_COST || m > KW_KEYSTORE_MAX_M_COST_KIB ||
+    p > KW_KEYSTORE_MAX_PARALLELISM) return 0;</code></pre>
+    <p>there is an ordering problem in the design above: the header's integrity can only be checked after the key is derived, and deriving the key runs whatever cost the header asks for. a crafted file asking for a terabyte would be honoured before the tag could refuse it. so the parameters are bounded first, and the length field has to match the file size exactly. a wrong passphrase and a tampered file both end the same way, a failed tag and nothing decrypted.</p>
+    <p>the derived key is mlock'd while it exists and wiped after, including on a failed derivation, since "a failed kdf can still have written". how that locking works is the next chapter.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/keystore.c">crypto/keystore.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/aead.c">crypto/aead.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/kdf.c">crypto/kdf.c</a></p>
+
+    <div class="try" data-panel="keystore">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>secret<input name="secret" value="sixty-four bytes of seed, normally" spellcheck="false" autocomplete="off" ></label>      <label>passphrase<input name="pass" value="correct horse" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="row">      <label>t_cost<input name="t" value="1" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>m_cost (KiB)<input name="m" value="8192" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <p class="warn">kw seals with t=3 and 64 MiB. these defaults are lighter so the page stays quick; raise them and watch it slow down.</p>
+      <div class="btns"><button type="button" data-act="seal">seal</button><button type="button" data-act="open">open</button><button type="button" data-act="flipkdf">flip a kdf byte</button><button type="button" data-act="flipct">flip a ciphertext byte</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+    <div class="pager"><a href="#/learn/keys"><span>previous</span>1. keys</a><a class="r" href="#/learn/memory"><span>next</span>3. memory</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: memory ───────────────────────── -->
+  <section data-route="/learn/memory" hidden>
+    <p class="kicker">learn / 3</p>
+    <h1>memory</h1>
+    <p>a decrypted seed is a run of bytes in ram. the job is to keep it out of every place ram leaks to: freed memory reused by something else, swap, core files, other processes. each defence is a few lines, and each has a way to be quietly wrong.</p>
+
+    <h2>zeroing the compiler cannot remove</h2>
+<pre><code>void kw_secure_zero(void *p, size_t n)
+{
+    volatile unsigned char *v = (volatile unsigned char *)p;
+    while (n--) *v++ = 0;
+}</code></pre>
+    <p>a <code>memset</code> on a buffer that is never read again is a dead store, and optimisers delete dead stores. writing through a volatile pointer tells the compiler each write is observable, so it stays.</p>
+
+    <h2>comparing without a timing leak</h2>
+<pre><code>for (size_t i = 0; i &lt; n; i++) d |= (unsigned char)(x[i] ^ y[i]);
+return d;   <span class="c">/* 0 == equal */</span></code></pre>
+    <p><code>memcmp</code> returns at the first difference, so how long it takes says how many leading bytes matched. this loop always touches every byte. <code>kw backup verify</code> uses it to compare the seed your words give against the keystore's.</p>
+
+    <h2>mlock, counted</h2>
+    <p><code>mlock</code> pins pages so they never reach swap, but it works on whole pages and does not count. lock two secrets on one page, unlock the first, and the second is pageable while still in use. that happened: the keystore's derived key sits a stack frame below the caller's seed, and forgetting the key unlocked the seed.</p>
+<pre><code>if (--lock_tab[i].refs == 0 &amp;&amp; !lock_overflow) kw_munlock((void *)pg, ps);</code></pre>
+    <p>so koinu keeps a reference count per page and unlocks on the last forget. if the table overflows it stops unlocking altogether, since an untracked page could otherwise be released under a secret it does not know about. what gets locked is the seed, every bip32 key on the derivation path including the intermediates, the hmac output a child key is cut from, the keystore key, a decoded wif, and the buffer a passphrase is read into.</p>
+
+    <h2>what is not locked, said plainly</h2>
+    <p>argon2id allocates its own working memory, up to the 1 GiB a keystore header may ask for, and bip39 builds <code>"mnemonic"</code> plus the passphrase on the heap for the length of 2048 pbkdf2 rounds. both are wiped before they are freed, but locking a gibibyte would fail under the usual <code>RLIMIT_MEMLOCK</code>. on a machine with swap under memory pressure, key derivation is the window where passphrase-derived bytes can reach disk. the threat model states this rather than claiming otherwise.</p>
+
+    <h2>core files and stdio</h2>
+<pre><code>setrlimit(RLIMIT_CORE, &amp;rl);              <span class="c">/* zero */</span>
+prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);     <span class="c">/* and no ptrace from a same-uid process */</span></code></pre>
+    <p>mlock keeps a page out of swap and says nothing about a core dump. a SIGQUIT at the passphrase prompt once put a mnemonic the user had not seen yet into a core file, and systemd-coredump keeps what it is given. kw, kwd and kwui set both of these before reading any secret. the mnemonic is written with <code>write(2)</code> rather than <code>printf</code> too, because stdio's buffer is malloc'd once, never wiped, and outlives every forget in the process.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/mem.c">crypto/mem.c</a></p>
+    <div class="pager"><a href="#/learn/keystore"><span>previous</span>2. keystore</a><a class="r" href="#/learn/transactions"><span>next</span>4. transactions</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: transactions ───────────────────────── -->
+  <section data-route="/learn/transactions" hidden>
+    <p class="kicker">learn / 4</p>
+    <h1>transactions</h1>
+    <p>a transaction lists inputs, each naming a previous output by txid and index, and outputs, each an amount and a locking script. a p2pkh locking script says "show a public key hashing to this, and a signature by it":</p>
+<pre><code>OP_DUP OP_HASH160 &lt;20-byte hash160&gt; OP_EQUALVERIFY OP_CHECKSIG
+76     a9         14 ...             88             ac</code></pre>
+
+    <h2>what gets signed</h2>
+    <p>a signature cannot cover its own scriptSig, so legacy signing serializes a modified copy: every input's scriptSig empty except the one being signed, which carries the previous output's script instead. append the hash type as four bytes and double sha-256 the lot.</p>
+<pre><code>} else if ((size_t)sig_index == i) {
+    w_varint(&amp;w, sublen);           <span class="c">/* the input being signed: its scriptCode */</span>
+    w_bytes(&amp;w, subscript, sublen);
+} else {
+    w_varint(&amp;w, 0);                <span class="c">/* every other input: empty */</span>
+}
+...
+buf[n++] = (uint8_t)hashtype; buf[n++] = 0; buf[n++] = 0; buf[n++] = 0;
+kw_hash256(buf, n, out);</code></pre>
+    <p>the signature is deterministic (rfc 6979, the nonce derived from the key and the message) and low-s, so signing twice gives identical bytes and a nonce is never reused. the scriptSig is then <code>&lt;sig || 0x01&gt; &lt;pubkey&gt;</code>. the result is checked byte for byte against libdogecoin's signer on 322 real mainnet spends.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/tx.c">crypto/tx.c</a></p>
+
+    <h2>the amount that is not signed</h2>
+    <p>look at what that preimage contains: the outpoints being spent and the scripts they carry. it does not contain what those outpoints are worth. legacy sighash commits to the inputs, not their values, so a signer has to be told each amount, and the fee is whatever the inputs hold minus the outputs.</p>
+    <p>the consequence is concrete. editing one value column in a utxo file turned a 1000 doge spend into a 998 doge fee that the wallet reported as 0.000192. <code>kw send</code> could not catch it either, since the fee is not in the transaction to be read back, and a fee bound cannot help because it bounds the fee the signer believes it is paying.</p>
+<pre><code><span class="c">/* everything said about the transaction is checked against bytes that
+   produce this txid */</span>
+kw_hash256(rawtx, rawlen, got);
+if (memcmp(got, txid, 32) != 0) return 0;</code></pre>
+    <p>so the utxo set carries the whole previous transaction behind every output, and loading it hashes those bytes, requires the txid, and reads the amount and script from them. a hostile file can still name a coin that does not exist, which produces a transaction nodes refuse. it can no longer move value to the miner. a psbt works the same way, which is what makes the air-gapped signer safe to hand a file.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/wallet/utxo.c">wallet/utxo.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/psbt.c">crypto/psbt.c</a></p>
+    <div class="try" data-panel="tx">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <label>raw transaction (hex)<textarea name="raw" rows="3" spellcheck="false" >010000000155e6b40272e7021a4bd58062c77f3eabc768487bdbdd6c01a6049078eed7cdd5000000006a47304402202a404a543e1eac7b11370d39e6ca2c08f040ac14ca9583e6dc6ae4e6732aafff022071e14eb8bbb9d0227615980c8a35680b7b8e154d8e9152aa4b77ae45abbe89df01210388ffe36b255315f5825bb81fe06288d06161f62039d8ef78d4e049d2d16c469afdffffff020003901c000000001976a914dbc5e6dbd5994fbb53f390369b7736527b085a3688ac00216e83010000001976a91455165656b9e31f1e98a1d192b17d2c91c3f6ec3288ac00000000</textarea></label>
+      <div class="row">      <label>previous output script, for the sighash<input name="spk" value="76a91484548a7ef267965d241e51ce74212acea2cc9e7a88ac" spellcheck="false" autocomplete="off" ></label>      <label>input<input name="vin" value="0" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <p class="warn">a real mainnet spend from <a href="https://github.com/xanimo/koinu/blob/main/test/vectors/sighash_mainnet.txt">test/vectors/sighash_mainnet.txt</a>, which the network accepted. the sighash is the 32 bytes the signature in its scriptSig signs. notice that no amount for the input appears anywhere above.</p>
+      <div class="btns"><button type="button" data-act="tx">decode</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+
+    <h2>a lesson from OP_CODESEPARATOR</h2>
+    <p>consensus hashes the scriptCode from just past the last OP_CODESEPARATOR executed before the checksig, then removes any that remain. sign the script verbatim and you get a signature that verifies locally against the same wrong hash and fails on chain. two bugs were fixed here: dropping every <code>0xab</code> byte, including one inside a pushed hash160 (one address in thirteen has that byte), and starting from the last separator anywhere rather than the last before the checksig.</p>
+<pre><code><span class="c">/* OP_CODESEPARATOR is an opcode, and 0xab inside a push is data */</span>
+if (datalen) { memcpy(out + k, in + i, hdr + datalen); ... continue; }
+if (op != 0xab) out[k++] = op;</code></pre>
+    <p>which separator executes depends on the run, so where a branch could skip one, or one sits between two checksigs, the bytes do not say what to sign. koinu refuses those rather than guessing. the general point: a signer must hash exactly what a node will, and a test that verifies against your own hash function proves nothing about that.</p>
+
+    <h2>multisig</h2>
+    <p>a p2sh output locks to the hash160 of a redeem script, here <code>OP_m &lt;pub&gt;... OP_n OP_CHECKMULTISIG</code>, and the spend reveals it. the scriptSig starts with <code>OP_0</code> because CHECKMULTISIG pops one more item than it uses, a bug from bitcoin's first release that is now consensus. cosign and psbt sign refuse a script that does not name the signing key, which closed a hole where a p2pkh script passed off as a redeem script turned a cosignature into a spend of the signer's own coin.</p>
+    <div class="pager"><a href="#/learn/memory"><span>previous</span>3. memory</a><a class="r" href="#/learn/shares"><span>next</span>5. shares</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: shares ───────────────────────── -->
+  <section data-route="/learn/shares" hidden>
+    <p class="kicker">learn / 5</p>
+    <h1>shares</h1>
+    <p>one written phrase conflates two numbers: one copy is lost to one fire, and one copy is stolen from one drawer. make two copies and you halve the first risk by doubling the second. threshold sharing separates them.</p>
+
+    <h2>shamir, in one paragraph</h2>
+    <p>to split a secret s with threshold t, pick a random polynomial of degree t&minus;1 whose constant term is s, and hand out its value at distinct points. any t points determine the polynomial and so s. with t&minus;1 points every value of s is equally consistent with what you hold, so fewer than the threshold reveals nothing, and that is arithmetic rather than a claim. the field is finite, so there is no size or rounding leak either. losing the wallet takes more than n&minus;t shares, stealing it takes t.</p>
+
+    <h2>slip-39</h2>
+    <p>koinu splits the 64-byte seed, which is what slip-39 calls the master secret, so a threshold restores the same wallet in any implementation of the standard. groups add a second level: a threshold of groups, each with its own threshold of shares. slip-39 also encrypts the secret under an optional passphrase, and has nothing to check that passphrase against by design, so a wrong one combines to a different wallet. a share leaks the backup's shape (its group, thresholds and group count are in clear) and none of the seed.</p>
+    <p>combine refuses a set with a spare share. a set that reconstructs with one left over does not tell you what it reconstructed.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/slip39.c">crypto/slip39.c</a></p>
+
+    <h2>codex32</h2>
+    <p>bip-93 does the same split over gf(32), the field of 32 elements, and checksums each share with a bch code over that field. both are small enough to compute with a pen and a printed table, which changes who can check a backup: you can verify a share, or recompute a lost one, without trusting the machine that reads it.</p>
+    <p>it gives up slip-39's passphrase, its digest over the reconstructed secret and its grouping. individually valid shares reconstruct whatever polynomial they describe, and nothing in the format says that is the seed they came from. that is why split prints a fingerprint and combine prints the first address: compare them.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/codex32.c">crypto/codex32.c</a></p>
+
+    <div class="try" data-panel="slip39">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>secret (hex, 16 to 64 bytes)<input name="secret" value="000102030405060708090a0b0c0d0e0f" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="row">      <label>groups<input name="groups" value="2of3" spellcheck="false" autocomplete="off" ></label>      <label>group threshold<input name="gthr" value="1" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>passphrase<input name="pass" value="" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="btns"><button type="button" data-act="slipsplit">split</button><button type="button" data-act="slipcombine">combine the ticked shares</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+    <div class="try" data-panel="codex32">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>secret (hex)<input name="secret" value="000102030405060708090a0b0c0d0e0f" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="row">      <label>id (4 bech32 characters)<input name="id" value="kw00" spellcheck="false" autocomplete="off" ></label>      <label>threshold<input name="thr" value="2" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>shares<input name="count" value="3" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <div class="btns"><button type="button" data-act="c32split">split</button><button type="button" data-act="c32combine">combine the ticked shares</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+    <div class="pager"><a href="#/learn/transactions"><span>previous</span>4. transactions</a><a class="r" href="#/learn/headers"><span>next</span>6. headers</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: headers ───────────────────────── -->
+  <section data-route="/learn/headers" hidden>
+    <p class="kicker">learn / 6</p>
+    <h1>headers</h1>
+    <p>a light wallet does not download the chain. it downloads the 80-byte headers, checks the work in each, and later asks for the few blocks it cares about, checking each against the header that commits to it.</p>
+<pre><code>offset  size  field
+     0     4  version
+     4    32  previous block hash
+    36    32  merkle root of the block's transactions
+    68     4  time
+    72     4  bits (the target, compact)
+    76     4  nonce</code></pre>
+    <p>the block's identity is the double sha-256 of those 80 bytes. its proof of work is a different hash: scrypt with n=1024, r=1, p=1 over the same bytes, which has to come in at or under the target. koinu's scrypt has scalar, sse2, neon and an eight-at-once avx2 salsa20/8 core, each checked against the scalar one over random headers.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/headers.c">net/headers.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/scrypt.c">crypto/scrypt.c</a></p>
+    <div class="try" data-panel="header">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <label>80-byte header (hex)<textarea name="hdr" rows="3" spellcheck="false" >010000000000000000000000000000000000000000000000000000000000000000000000696ad20e2dd4365c7459b4a4a5af743d5e92c6da3229e6532cd605f6533f2a5b24a6a152f0ff0f1e67860100</textarea></label>
+      <p class="warn">dogecoin's genesis block. its double sha-256 is the genesis hash chainparams compiles in, and its scrypt hash meets the target its own bits ask for.</p>
+      <div class="btns"><button type="button" data-act="header">hash it</button><button type="button" data-act="nonce">add one to the nonce</button><button type="button" data-act="genesis">reset</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+
+    <h2>nBits</h2>
+    <p>the 256-bit target is stored as an exponent byte and a 24-bit mantissa: target = mantissa &times; 256<sup>exponent&minus;3</sup>. the top mantissa bit means negative, which a target never is. decoding has a trap the comment spells out: bounding the exponent is not enough, because <code>0x22001234</code> has a small exponent for its mantissa and still runs past bit 256.</p>
+<pre><code>unsigned shift = 8 * (expo - 3), mbits = 0;
+for (uint32_t m = mant; m; m >>= 1) mbits++;
+if (shift + mbits > 256) return 0;</code></pre>
+
+    <h2>work</h2>
+    <p>a header's work is the expected number of hashes to meet its target, 2<sup>256</sup> / (target + 1). the chain with the most total work wins, not the longest. 2<sup>256</sup> does not fit in 256 bits, so the code uses an identity:</p>
+<pre><code><span class="c">/* 2^256/(t+1) without a 257th bit: (~t)/(t+1) + 1,
+   since 2^256 = (~t) + (t+1) */</span>
+for (int i = 0; i &lt; 8; i++) num.w[i] = ~target.w[i];
+divide(&amp;num, &amp;denom, out);
+kw_u256_add(out, &amp;one);</code></pre>
+    <p>the 256-bit integers are eight 32-bit limbs with exactly the operations the two rules need, and the division is plain shift-and-subtract because it runs at most once per header.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/pow.c">net/pow.c</a></p>
+    <div class="try" data-panel="bits">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>nBits (hex)<input name="bits" value="1e0ffff0" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="btns"><button type="button" data-act="bits">decode</button><button type="button" data-act="bitsgen">genesis</button><button type="button" data-act="bits6m">height 6000000</button><button type="button" data-act="bitsbad">0x22001234</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+
+    <h2>the retarget, and its off-by-one</h2>
+    <p>a header's target is not its own claim. it must equal what the retarget rule derives from the headers before it. dogecoin retargeted every 240 blocks (four hours at a minute a block) until digishield at 145000, and every block after, with an amplitude filter that moves only an eighth of the way toward the measured time and clamps the result:</p>
+<pre><code>actual = span + (actual - span) / 8;   <span class="c">/* the amplitude filter */</span>
+lo = span - span / 4;
+hi = span + span / 2;</code></pre>
+    <p>the switch has a subtlety worth reading the code for. whether a height retargets uses the previous block's height, so 145000 still belongs to a 240-block period, and since 145000 mod 240 is 40 it retargets nothing. the damping and timespan use the height being validated. so 145001 is the first block that actually recomputes every block. get that wrong by one and the header chain stops at 145000.</p>
+<pre><code>static int per_block(const kw_pow_rules *r, uint32_t height)
+{   return height >= 1 &amp;&amp; (height - 1) >= r->digishield_height; }
+static int digishield(const kw_pow_rules *r, uint32_t height)
+{   return height >= r->digishield_height; }</code></pre>
+    <div class="try" data-panel="retarget">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <label>a real height<select name="preset"><option value="240|1e0ffff0|1386475638|1386325540|1e0fffff" >240: first retarget after genesis, clamped to the limit</option><option value="144960|1b3abe5c|1395092404|1395074358|1b499dfd" >144960: the last 240-block period</option><option value="145000|1b499dfd|1395094427|0|1b499dfd" >145000: digishield height, but no retarget</option><option value="145001|1b499dfd|1395094679|1395094427|1b671062" selected>145001: the first block that recomputes</option><option value="6000000|192bf979|1765676657|1765676553|192fa398" >6000000: recent</option></select></label>
+      <div class="row">      <label>height<input name="height" value="145001" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>previous nBits<input name="lb" value="1b499dfd" spellcheck="false" autocomplete="off" ></label></div>
+      <div class="row">      <label>previous block time<input name="lt" value="1395094679" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>time of the block reached back to<input name="ft" value="1395094427" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <p class="warn">presets are the real values from <a href="https://github.com/xanimo/koinu/blob/main/test/test_pow.c">test/test_pow.c</a>. change the times to see the amplitude filter and the clamp at work.</p>
+      <div class="btns"><button type="button" data-act="retarget">compute</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+
+    <h2>time</h2>
+    <p>the retarget reads timestamps, so timestamps are the attack surface. without bounds, a run of headers claiming the maximum easing walks the target to the limit, after which a header costs nothing. so a header's time must be after the median of the eleven before it and no more than two hours ahead of local time. with those bounds the cheapest fake run of six confirmations still costs about 2.7 blocks of real work, which is the number to budget against rather than six.</p>
+    <p>one fix here is a nice small lesson: <code>now</code> is read per batch rather than once, because a sequential sync from genesis takes longer than two hours, and a single <code>now</code> taken at the start made honest headers near the tip look stamped in the future.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/sync.c">net/sync.c</a></p>
+
+    <h2>anchors and the cache</h2>
+    <p>below the newest block hash compiled into chainparams, the parallel download checks that each segment links and ends on its anchor, and checks no work. a hash names one chain where work only proves energy went into some chain, and the anchors are only as good as the release that carries them. <code>--validate-pow</code> trusts no anchor and hashes from height 1.</p>
+    <p>the cache stores each header with its hash so a load does not rehash six million records. that only proves each record agrees with the next one's claim, so the tip, every anchor height and every record above the newest anchor are rehashed: 20 ms, against 8.5 s for all of them on a cpu without sha-ni. a block body is refused unless its transactions hash to the header's merkle root, with a level holding an equal adjacent pair refused too (cve-2012-2459: an odd level repeats its last node, so two transaction lists can share a root).</p>
+    <div class="pager"><a href="#/learn/shares"><span>previous</span>5. shares</a><a class="r" href="#/learn/auxpow"><span>next</span>7. auxpow</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: auxpow ───────────────────────── -->
+  <section data-route="/learn/auxpow" hidden>
+    <p class="kicker">learn / 7</p>
+    <h1>auxpow</h1>
+    <p>since 2014 dogecoin is merge-mined with litecoin. a miner builds a litecoin block whose coinbase commits to a dogecoin block hash; if the litecoin header meets dogecoin's target, that work counts for dogecoin too. a dogecoin header with version bit <code>0x100</code> set is followed by an auxpow proof instead of carrying its own nonce, and its own header hash need not meet any target.</p>
+    <p>checking a proof is a chain of "this hash really is inside that". each step is a few lines of <a href="https://github.com/xanimo/koinu/blob/main/net/auxpow.c">net/auxpow.c</a>:</p>
+    <ol class="plain">
+      <li><span>the parent's coinbase must be transaction 0, and the parent must be on a different chain: its chain id (the high 16 bits of its version) cannot be dogecoin's <code>0x0062</code>, or the work is not borrowed at all.</span></li>
+      <li><span>walk a merkle branch up from this dogecoin block's hash to a root. that root, byte-reversed, has to appear in the coinbase's first input script.</span></li>
+      <li><span>hash the coinbase to its txid and walk the parent's merkle branch up to the parent header's merkle root. litecoin has segwit, so the txid has to be computed with the witness stripped; hashing the bytes as they arrived gives the wtxid, and every litecoin block since 2017 would be refused.</span></li>
+      <li><span>the magic <code>fa be 6d 6d</code> must appear once and sit immediately before the commitment, otherwise a second chain's root could be appended and the same work spent twice. older proofs carry no magic, so the commitment must start in the first 20 bytes.</span></li>
+      <li><span>after the root come the tree size and a nonce. the size must be 2<sup>branch length</sup>, and this chain's slot must be the one a fixed formula derives from the nonce and the chain id, so one parent cannot commit to two dogecoin blocks in different slots.</span></li>
+      <li><span>finally, scrypt of the parent header must meet the dogecoin header's own target.</span></li>
+    </ol>
+<pre><code><span class="c">/* Deliberately the same wrapping arithmetic as the reference: it overflows,
+   and the result is taken modulo a power of two, so the overflow is part of
+   the answer rather than a bug in it. */</span>
+rand = nonce;
+rand = rand * 1103515245u + 12345u;
+rand += (uint32_t)chain_id;
+rand = rand * 1103515245u + 12345u;
+return rand % (1u &lt;&lt; h);</code></pre>
+    <div class="try" data-panel="auxpow">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>parent nonce<input name="nonce" value="12345" spellcheck="false" autocomplete="off" inputmode="numeric"></label>      <label>chain id<input name="cid" value="0x62" spellcheck="false" autocomplete="off" ></label>      <label>branch length<input name="h" value="3" spellcheck="false" autocomplete="off" inputmode="numeric"></label></div>
+      <div class="btns"><button type="button" data-act="slot">which slot</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+    <p>the parser also refuses non-canonical varints. the coinbase bytes are its txid's preimage, and two encodings of one length would be two txids for one transaction. the layout lives in one function, and a sync that is not verifying steps over a proof by calling the same parser with no destination, so the two can never disagree about where a proof ends.</p>
+    <div class="pager"><a href="#/learn/headers"><span>previous</span>6. headers</a><a class="r" href="#/learn/filters"><span>next</span>8. filters</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: filters ───────────────────────── -->
+  <section data-route="/learn/filters" hidden>
+    <p class="kicker">learn / 8</p>
+    <h1>filters</h1>
+    <p>with headers verified, the wallet has to find which blocks pay or spend its scripts. asking a peer "what about these addresses" tells the peer exactly which addresses are yours. bloom filters (bip37) were meant to blur that and leaked far more than intended. bip157/158 reverses the direction: the peer sends a compact summary of each block and the wallet tests it locally.</p>
+
+    <h2>a golomb-coded set</h2>
+    <p>for each block, hash every output script and every spent script with siphash-2-4, keyed by the first 16 bytes of the block hash, and map each into [0, N&times;M) where N is the item count and M is 784931:</p>
+<pre><code><span class="c">/* the high half of the 128-bit product: uniform into [0, F) */</span>
+return (uint64_t)(((__uint128_t)v * (__uint128_t)F) >> 64);</code></pre>
+    <p>sort the values and store the gaps between them. gaps in a uniform random set are roughly geometric, which golomb-rice coding packs well: the quotient in unary, the low 19 bits as they are.</p>
+    <p>to match, hash your own scripts the same way, sort them, and merge against the decoded stream. a false positive happens about once in 784931 per script tested, and costs one unnecessary block download. there are no false negatives.</p>
+<pre><code>val += gr_next(&amp;b);                          <span class="c">/* next value in the set */</span>
+while (ti &lt; nitems &amp;&amp; tv[ti] &lt; val) ti++;     <span class="c">/* advance our sorted targets */</span>
+if (ti &lt; nitems &amp;&amp; tv[ti] == val) found = 1;</code></pre>
+    <p>two defensive lines are worth noticing. a claimed count larger than the remaining bits is refused, since each element costs at least one bit, which also keeps N&times;M under 2<sup>64</sup>. and the count is read into a <code>uint64_t</code> out-parameter rather than returned as a <code>long</code>, because long is 32 bits on i386 and truncation turned an absurd N into a small one that passed the bound.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/gcs.c">net/gcs.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/siphash.c">crypto/siphash.c</a></p>
+    <div class="try" data-panel="filter">
+      <p class="try-h">run it <span>koinu's own c, compiled to wasm, running in this page. nothing is sent anywhere.</span></p>
+      <div class="row">      <label>a script to test (hex)<input name="script" value="76a91400d4cfa4aa4fd8c9e12fa300ee5f0492072fee8988ac" spellcheck="false" autocomplete="off" ></label></div>
+      <p class="warn">block 49291 from bitcoin core's bip158 test vectors (blockfilters.json, bitcoin testnet). the filter rules are identical on dogecoin. click any of the block's scripts to test it, or paste your own.</p>
+      <div class="btns"><button type="button" data-act="filter">test it</button></div>
+      <div class="out" aria-live="polite"></div>
+    </div>
+
+
+    <h2>trusting a filter</h2>
+    <p>a peer could serve a filter that omits your transaction. so filters are chained the way headers are: each filter header is the double sha-256 of the filter's hash and the previous filter header.</p>
+<pre><code>memcpy(buf, filter_hash, 32);
+memcpy(buf + 32, prev, 32);
+kw_hash256(buf, 64, out);</code></pre>
+    <p>koinu checks every filter against the peer's committed filter-header chain, pins the verified tip so a later sync has to connect to it, and checks the chain against anchors compiled into chainparams every 100000 blocks. above the last anchor the base is still the peer's word, and the anchors were generated from one node's cfheaders rather than derived from blocks.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/cf.c">net/cf.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/net/cfstore.c">net/cfstore.c</a></p>
+
+    <h2>what it leaks, and the catch</h2>
+    <p>a peer still learns which blocks you fetched. that is weaker than an address query and not nothing, and tor moves the observer rather than removing them.</p>
+    <p class="note">the catch is practical. probing the peers dogecoin's dns seeds hand out, 47 of 48 answered and none advertised bip158. against the public network today the filter path does not run, and <code>--spv</code>, downloading every block in range and scanning it locally, is what is left. the filter backend needs a node you run with filters enabled. <a href="https://github.com/xanimo/koinu/blob/main/test/net_services.c">test/net_services.c</a> is the probe if you want to measure again.</p>
+    <div class="pager"><a href="#/learn/auxpow"><span>previous</span>7. auxpow</a><a class="r" href="#/learn/peers"><span>next</span>9. peers</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: peers ───────────────────────── -->
+  <section data-route="/learn/peers" hidden>
+    <p class="kicker">learn / 9</p>
+    <h1>peers</h1>
+    <p>everything so far checks what a peer sends. none of it helps if every peer you reach is serving the same wrong chain. choosing peers is the weakest part of any light wallet, and the useful thing is to know exactly how weak.</p>
+
+    <h2>three chains, the heaviest wins</h2>
+    <p>above the newest anchor, where chains can actually differ, a header sync opens up to three connections, asks each where its chain leaves the one already held, syncs each fork, checks each with its own validator pool so one peer's bad header does not discard another's chain, and keeps the one with the most work. the cached chain is a candidate too, so a peer has to beat it, not merely differ from it. a fork below an anchor is refused rather than weighed.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/chainsel.c">net/chainsel.c</a></p>
+
+    <h2>a lie that switched the check off</h2>
+    <p>comparing chains means holding them in memory, so above a cap the comparison is skipped and one peer is used. the span was sized from the highest height any peer advertised in its version message. one peer claiming 2<sup>31</sup> pushed the span past the cap and collapsed the comparison to <code>peers[0]</code>, which could be that peer.</p>
+<pre><code><span class="c">/* the lower median, so two peers take the smaller: with only two
+   there is nothing to outvote a liar with */</span>
+uint32_t med = h[(nh - 1) / 2];</code></pre>
+    <p>a median moves only when most peers agree. the general lesson: any number a peer sends that changes which checks run is an input to the security of those checks.</p>
+
+    <h2>tor, one circuit per peer</h2>
+    <p>tor keys a circuit on the socks credentials. with none offered, every connection could share one exit, and that exit would see plaintext p2p for every peer the wallet treats as independent and could withhold from all of them. so each connection offers a fresh random username and password (rfc 1929). <code>make net_tor</code> opens three connections through a local daemon and reads circuit-status off the control port, so the circuits are counted rather than assumed.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/net/socks5.c">net/socks5.c</a></p>
+
+    <h2>what is still assumed</h2>
+    <p>work is compared among the peers reached, not against the most-work chain in existence. three peers that agree can all be wrong, by collusion or by being one node behind three addresses. without <code>--node</code>, mainnet peers come from two dns seed hostnames in one domain, so whoever controls them or the resolver path picks every peer. anchors and work checks bound that to eclipse and censorship rather than forged history below an anchor, but above the newest anchor a chosen peer set is the whole input. a peer cannot invent a confirmation there (it would have to mine it); it can withhold one. for anything taking payment on a confirmation, pass <code>--node</code> more than once with nodes you chose.</p>
+    <div class="pager"><a href="#/learn/filters"><span>previous</span>8. filters</a><a class="r" href="#/learn/boundary"><span>next</span>10. boundary</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: boundary ───────────────────────── -->
+  <section data-route="/learn/boundary" hidden>
+    <p class="kicker">learn / 10</p>
+    <h1>boundary</h1>
+    <p>"the signer never touches the network" is easy to write in a readme and easy to stop being true. koinu turns it into something the build checks.</p>
+
+    <h2>two archives</h2>
+    <p><code>libkoinu-sign.a</code> holds the keys, derivations, share formats, keystore, transaction builder, psbt code and utxo tracking. <code>libkoinu-chain.a</code> holds peers, headers, auxpow, difficulty and filters, and depends on the signing half rather than the reverse. the check reads what the linker will pull in, the archive's undefined symbols, rather than grepping source, so a call that arrives through a macro, an inline function or a new dependency is caught the same way:</p>
+<pre><code>SOCKETS='socket|socketpair|connect|bind|listen|accept|...|poll|epoll_wait'
+BAD=$(undef libkoinu-sign.a | grep -xE "($SOCKETS)" || true)</code></pre>
+
+    <h2>the control</h2>
+    <p>a check that finds nothing might be a check that cannot find anything. glibc versions its symbol references and mach-o prefixes every symbol with an underscore, and a pattern that misses both passes silently. so the script also requires the chain archive to reference some socket call, and fails if it does not, because then the first check proved nothing. after that it links and runs a signer against the signing half alone, which is the claim the symbol check only approximates. moving <code>net/peer.c</code> into the signing half fails on connect, setsockopt and socket.</p>
+<pre><code>GOOD=$(undef libkoinu-chain.a | grep -xE "($SOCKETS)" || true)
+if [ -z "$GOOD" ]; then
+    echo "FAIL: libkoinu-chain.a references no socket call, so the check above"
+    echo "  proved nothing."</code></pre>
+    <p>the same script fails if the signing archive exports a name outside <code>kw_</code> and <code>KW_</code>, or references stdout or stderr: the library prints nothing unless the caller installs a log sink, so a daemon or gui embedding it does not get koinu's prose in its output.</p>
+    <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/test/test_split.sh">test/test_split.sh</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/Makefile">Makefile</a></p>
+
+    <h2>what it does not give yet</h2>
+    <p>kw is one executable that links both archives, so the p2p parsers are in the binary that signs. for the program, what holds is a rule per invocation: <code>new</code>, <code>restore</code>, <code>address</code>, <code>sign</code>, <code>backup</code> and <code>export</code> never open a socket, <code>scan</code> forgets the seed and master key before it connects, and <code>sweep</code> is two commands for exactly this reason. the link boundary is what holds for a consumer of the library.</p>
+    <div class="pager"><a href="#/learn/peers"><span>previous</span>9. peers</a><a class="r" href="#/learn/threats"><span>next</span>11. threats</a></div>
+  </section>
+
+  <!-- ───────────────────────── learn: threats ───────────────────────── -->
+  <section data-route="/learn/threats" hidden>
+    <p class="kicker">learn / 11</p>
+    <h1>threats</h1>
+    <p>a summary of <a href="https://github.com/xanimo/koinu/blob/main/docs/threat-model.md">docs/threat-model.md</a>, which is the document the readme deliberately does not try to be.</p>
+
+    <h2>defended</h2>
+    <ul class="plain">
+      <li>a stolen keystore without its passphrase: argon2id and an authenticated header</li>
+      <li>secrets in swap, core files, argv, stdio buffers and freed memory, apart from the key derivation window stated in <a href="#/learn/memory">memory</a></li>
+      <li>a compromised kwd signing anything: it holds no keys</li>
+      <li>a hostile utxo file or psbt moving value to the miner: amounts are bound to txids</li>
+      <li>a signature that verifies locally and fails on chain: codeseparator handling, and cosign checks every signature before assembly</li>
+      <li>a peer forging history below an anchor, or headers above it without real work</li>
+      <li>a peer rewriting filters it already served: the pinned filter-header chain</li>
+      <li>one tor exit seeing every peer: a fresh credential pair per connection</li>
+      <li>every parser that reads peer-chosen bytes has a fuzz target: transactions, psbts, p2p frames, headers, blocks and filters</li>
+    </ul>
+
+    <h2>not defended</h2>
+    <ul class="plain">
+      <li>a compromised machine. a keylogger, a debugger, or code running as your user while kw runs can take the seed. no wallet can honestly claim otherwise.</li>
+      <li>a wrong destination. koinu will faithfully sign a spend to an address you did not mean to type.</li>
+      <li>approving a payment you meant to approve. it decodes and asks; a correct signature over a transaction you accepted cannot be undone.</li>
+      <li>peers that all agree on a wrong chain above the newest anchor, or one node behind several addresses.</li>
+      <li>a lost seed and keystore. there is no export, no account, no recovery address. that is the point of the thing, and it is also the way it bites.</li>
+    </ul>
+    <p class="note">not done: an external security review. everything here is self-assessed.</p>
+    <p>what it will not grow: server-side recovery, a login, telemetry, or any convenience that needs the key process to talk to the network.</p>
+    <div class="pager"><a href="#/learn/boundary"><span>previous</span>10. boundary</a><a class="r" href="#/learn"><span>back to</span>contents</a></div>
+  </section>
+
+  <footer>
+    <span>koinu 0.3.0 &middot; mit &middot; free</span>
+    <span><a href="https://github.com/xanimo/koinu">github.com/xanimo/koinu</a></span>
+  </footer>
+</main>
+<script>
+(function () {
+  var sections = document.querySelectorAll("section[data-route]");
+  var links = document.querySelectorAll("nav a[href^='#/']");
+  function route() {
+    var path = location.hash.replace(/^#/, "") || "/";
+    var hit = false;
+    sections.forEach(function (s) {
+      var on = s.getAttribute("data-route") === path;
+      s.hidden = !on;
+      if (on) hit = true;
+    });
+    if (!hit) { sections.forEach(function (s, i) { s.hidden = i !== 0; }); path = "/"; }
+    links.forEach(function (a) {
+      if (a.getAttribute("href") === "#" + path) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+    document.title = path === "/" ? "koinu" : "koinu / " + path.slice(1).replace("learn/", "");
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+<script src="koinu.js"></script>
+<script>
+(function () {
+  "use strict";
+  var K = null, loading = null, ran = new WeakSet();
+  function load() {
+    if (K) return Promise.resolve(K);
+    if (!loading) loading = koinu.load("koinu.wasm").then(function (k) { K = k; return k; });
+    return loading;
+  }
+  function esc(v) { return String(v).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function kv(rows) {
+    return rows.map(function (r) {
+      return '<div class="kv' + (r[2] ? " " + r[2] : "") + '"><span>' + esc(r[0]) + "</span><code>" + (r[3] ? r[1] : esc(r[1])) + "</code></div>";
+    }).join("");
+  }
+  function val(p, n) { var e = p.querySelector('[name="' + n + '"]'); return e ? e.value.trim() : ""; }
+  function set(p, n, v) { p.querySelector('[name="' + n + '"]').value = v; }
+  function num(p, n) { var v = val(p, n); return /^0x/i.test(v) ? parseInt(v, 16) : parseInt(v, 10) || 0; }
+  function hexn(p, n) { return parseInt(val(p, n).replace(/^0x/i, ""), 16) >>> 0; }
+  function err(o) { return kv([["refused", o.error, "bad"]]); }
+  function doge(v) { var s = String(v).padStart(9, "0"); return s.slice(0, -8) + "." + s.slice(-8) + " DOGE"; }
+  function big(h) { try { return BigInt("0x" + h).toLocaleString("en-US"); } catch (e) { return h; } }
+
+  var H = {
+    keys: function (p) {
+      var o = K.call("kwj_keys", val(p, "mnemonic").replace(/\s+/g, " "), p.querySelector('[name="pass"]').value, num(p, "change"), num(p, "index"));
+      if (o.error) return err(o);
+      return kv([
+        ["entropy", o.entropy], ["seed", o.seed, "", 0],
+        ["master key", o.master_key], ["chain code", o.master_chain],
+        ["path", o.path], ["child key", o.child_key], ["public key", o.pubkey],
+        ["sha256", o.sha256], ["hash160", o.hash160],
+        ["+ version", '<em>' + o.version + '</em>' + o.hash160 + '<em> + 4-byte checksum, base58</em>', "", 1],
+        ["address", o.address, "good"], ["wif", o.wif]
+      ]);
+    },
+    generate: function (p) { var o = K.call("kwj_generate", 12); set(p, "mnemonic", o.mnemonic); return H.keys(p); },
+    generate24: function (p) { var o = K.call("kwj_generate", 24); set(p, "mnemonic", o.mnemonic); return H.keys(p); },
+
+    seal: function (p) {
+      var t0 = performance.now();
+      var o = K.call("kwj_seal", val(p, "secret"), p.querySelector('[name="pass"]').value, num(p, "t"), num(p, "m"));
+      if (o.error) return err(o);
+      p.dataset.blob = o.blob;
+      return layout(o.blob, "sealed in " + Math.round(performance.now() - t0) + " ms");
+    },
+    open: function (p) {
+      if (!p.dataset.blob) H.seal(p);
+      var t0 = performance.now();
+      var o = K.call("kwj_open", p.dataset.blob, p.querySelector('[name="pass"]').value);
+      var ms = Math.round(performance.now() - t0) + " ms";
+      return layout(p.dataset.blob, p.dataset.note || "") + kv(o.ok
+        ? [["opened", o.secret + "   (" + ms + ")", "good"]]
+        : [["opened", "no: the tag did not verify, nothing was decrypted (" + ms + ")", "bad"]]);
+    },
+    flipkdf: function (p) { return flip(p, 12, "flipped byte 12, the lowest byte of m_cost: the kdf runs with different parameters and derives a different key"); },
+    flipct: function (p) { return flip(p, 53, "flipped byte 53, inside the ciphertext"); },
+
+    tx: function (p) {
+      var o = K.call("kwj_tx", val(p, "raw").replace(/\s+/g, ""), num(p, "vin"), val(p, "spk"));
+      if (o.error) return err(o);
+      var rows = [["txid", o.txid], ["size", o.bytes + " bytes" + (o.trailing ? ", " + o.trailing + " trailing ignored" : "")], ["version", o.version]];
+      o.inputs.forEach(function (i, n) { rows.push(["input " + n, i.txid + ":" + i.vout]); rows.push(["  scriptSig", i.scriptsig]); });
+      o.outputs.forEach(function (x, n) { rows.push(["output " + n, doge(x.value) + (x.address ? "  to " + x.address : "")]); rows.push(["  script", x.script]); });
+      rows.push(["locktime", o.locktime]);
+      if (o.sighash) rows.push(["sighash, input " + num(p, "vin"), o.sighash, "good"]);
+      return kv(rows);
+    },
+
+    slipsplit: function (p) {
+      var o = K.call("kwj_slip39_split", val(p, "secret"), p.querySelector('[name="pass"]').value, val(p, "groups"), num(p, "gthr"));
+      if (o.error) return err(o);
+      return shareList(o.shares.map(function (s) { return { text: s.words, tag: "group " + s.group + ", member " + s.member }; }));
+    },
+    slipcombine: function (p) {
+      var t = ticked(p); if (!t) return kv([["refused", "split first, then tick some shares", "bad"]]);
+      var o = K.call("kwj_slip39_combine", t, p.querySelector('[name="pass"]').value);
+      p.querySelector(".combined").innerHTML = o.error ? err(o) : kv([["secret", o.secret, o.secret === val(p, "secret").toLowerCase() ? "good" : ""]]);
+      return null;
+    },
+    c32split: function (p) {
+      var o = K.call("kwj_codex32_split", val(p, "secret"), val(p, "id"), num(p, "thr"), num(p, "count"));
+      if (o.error) return err(o);
+      return shareList(o.shares.map(function (s) { return { text: s, tag: "" }; }));
+    },
+    c32combine: function (p) {
+      var t = ticked(p); if (!t) return kv([["refused", "split first, then tick some shares", "bad"]]);
+      var o = K.call("kwj_codex32_combine", t);
+      p.querySelector(".combined").innerHTML = o.error ? err(o) : kv([["secret", o.secret, o.secret === val(p, "secret").toLowerCase() ? "good" : ""]]);
+      return null;
+    },
+
+    header: function (p) {
+      var o = K.call("kwj_header", val(p, "hdr").replace(/\s+/g, ""));
+      if (o.error) return err(o);
+      return kv([
+        ["version", o.version + (o.auxpow ? "  (auxpow bit set)" : "")], ["previous", o.prev], ["merkle root", o.merkle],
+        ["time", o.time + "  " + new Date(o.time * 1000).toISOString().replace("T", " ").slice(0, 19) + " utc"],
+        ["bits", o.bits], ["nonce", o.nonce],
+        ["block hash", o.hash + "  sha256d"], ["pow hash", o.pow + "  scrypt"],
+        ["target", o.target || ""], ["meets target", o.meets ? "yes" : "no", o.meets ? "good" : "bad"]
+      ]);
+    },
+    nonce: function (p) {
+      var h = val(p, "hdr").replace(/\s+/g, "");
+      if (h.length !== 160) return H.header(p);
+      var n = (parseInt(h.slice(152, 160).match(/../g).reverse().join(""), 16) + 1) >>> 0;
+      var le = n.toString(16).padStart(8, "0").match(/../g).reverse().join("");
+      set(p, "hdr", h.slice(0, 152) + le);
+      return H.header(p);
+    },
+    genesis: function (p) { set(p, "hdr", p.querySelector('[name="hdr"]').defaultValue); return H.header(p); },
+
+    bits: function (p) {
+      var o = K.call("kwj_bits", hexn(p, "bits"));
+      if (o.error) return err(o);
+      return kv([["exponent", o.exponent], ["mantissa", o.mantissa],
+        ["target", o.target], ["work", o.work], ["work, decimal", big(o.work) + " hashes expected"],
+        ["re-encoded", o.roundtrip]]);
+    },
+    bitsgen: function (p) { set(p, "bits", "1e0ffff0"); return H.bits(p); },
+    bits6m: function (p) { set(p, "bits", "192fa398"); return H.bits(p); },
+    bitsbad: function (p) { set(p, "bits", "22001234"); return H.bits(p); },
+
+    retarget: function (p) {
+      var o = K.call("kwj_retarget", num(p, "height"), hexn(p, "lb"), num(p, "lt"), num(p, "ft"));
+      var pr = val(p, "preset").split("|"), chain = pr[0] === val(p, "height") && pr[1] === val(p, "lb") && pr[2] === val(p, "lt") && pr[3] === val(p, "ft") ? pr[4] : null;
+      var rows = [["retargets here", o.retargets ? "yes, reaching back to height " + o.first_height : "no, carries the previous bits"],
+        ["digishield rules", o.digishield ? "yes" : "no"], ["bits", o.bits, chain ? (chain === o.bits ? "good" : "bad") : ""]];
+      if (chain) rows.push(["the chain carries", chain]);
+      return kv(rows);
+    },
+
+    slot: function (p) {
+      var o = K.call("kwj_auxpow_slot", num(p, "nonce") >>> 0, num(p, "cid"), num(p, "h"));
+      return kv([["tree size", o.size + " slots"], ["dogecoin's slot", o.slot, "good"]]);
+    },
+
+    filter: function (p) {
+      var f = p._f || (p._f = K.call("kwj_filter"));
+      var o = K.call("kwj_filter_match", val(p, "script"));
+      if (o.error) return err(o);
+      var vals = f.values.map(function (v) { return v === o.value ? "<b>" + v + "</b>" : String(v); }).join("  ");
+      var chips = f.elements.map(function (e, i) { return '<button type="button" data-el="' + e + '">script ' + (i + 1) + "</button>"; }).join("");
+      return kv([["block", f.block], ["filter", f.filter + "  (" + f.bytes + " bytes)"], ["N", f.n + " scripts"],
+        ["range", "[0, " + Number(f.range).toLocaleString("en-US") + ")  N × 784931"]]) +
+        '<div class="kv"><span>decoded set</span><code class="vals">' + vals + "</code></div>" +
+        '<div class="kv"><span>this block\'s scripts</span><code><span class="chips">' + chips + "</span></code></div>" +
+        kv([["your script's value", o.value], ["in the filter", o.match ? "yes: fetch this block" : "no: skip it", o.match ? "good" : "bad"]]);
+    }
+  };
+
+  function layout(hex, note) {
+    var parts = [[0, 4, "magic"], [4, 4, "version, kdf, aead, reserved"], [8, 12, "t, m, p"], [20, 16, "salt"], [36, 12, "nonce"], [48, 4, "ct_len"]];
+    var n = hex.length / 2, rows = parts.map(function (q) { return [q[0] + "  " + q[2], hex.slice(q[0] * 2, (q[0] + q[1]) * 2)]; });
+    rows.push([52 + "  ciphertext", hex.slice(104, (n - 16) * 2)]);
+    rows.push([(n - 16) + "  tag", hex.slice((n - 16) * 2)]);
+    if (note) rows.push(["", note]);
+    return kv(rows);
+  }
+  function flip(p, at, why) {
+    if (!p.dataset.blob) H.seal(p);
+    var b = p.dataset.blob, x = (parseInt(b.slice(at * 2, at * 2 + 2), 16) ^ 1).toString(16).padStart(2, "0");
+    p.dataset.blob = b.slice(0, at * 2) + x + b.slice(at * 2 + 2);
+    p.dataset.note = why + ". seal again to start over.";
+    var r = H.open(p); p.dataset.note = ""; return r;
+  }
+  function shareList(list) {
+    return list.map(function (s, i) {
+      return '<label class="share"><input type="checkbox"' + (i < 2 ? " checked" : "") + ' value="' + esc(s.text) + '"><span>' + esc(s.text) + (s.tag ? ' <em class="dim">(' + s.tag + ")</em>" : "") + "</span></label>";
+    }).join("") + '<div class="combined"></div>';
+  }
+  function ticked(p) {
+    var t = [].map.call(p.querySelectorAll(".share input:checked"), function (c) { return c.value; });
+    return t.length ? t.join("\n") : "";
+  }
+
+  function run(p, act) {
+    var out = p.querySelector(".out");
+    load().then(function () {
+      try { var h = H[act](p); if (h !== null) out.innerHTML = h; }
+      catch (e) { out.innerHTML = kv([["error", String(e), "bad"]]); }
+    }, function (e) {
+      out.innerHTML = kv([["not loaded", location.protocol === "file:" ? "browsers will not load wasm from a file:// page. serve the folder: python3 -m http.server" : String(e), "bad"]]);
+    });
+  }
+  var first = { keys: "keys", keystore: "open", tx: "tx", slip39: "slipsplit", codex32: "c32split", header: "header", bits: "bits", retarget: "retarget", auxpow: "slot", filter: "filter" };
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".try button");
+    if (!b) return;
+    var p = b.closest(".try");
+    if (b.dataset.el) { set(p, "script", b.dataset.el); return run(p, "filter"); }
+    run(p, b.dataset.act);
+  });
+  document.addEventListener("change", function (e) {
+    if (e.target.name !== "preset") return;
+    var p = e.target.closest(".try"), v = e.target.value.split("|");
+    set(p, "height", v[0]); set(p, "lb", v[1]); set(p, "lt", v[2]); set(p, "ft", v[3]);
+    run(p, "retarget");
+  });
+  function autorun() {
+    document.querySelectorAll("section:not([hidden]) .try").forEach(function (p) {
+      if (ran.has(p)) return; ran.add(p); run(p, first[p.dataset.panel]);
+    });
+  }
+  window.addEventListener("hashchange", function () { setTimeout(autorun, 0); });
+  autorun();
+})();
+</script>
+</body>
+</html>
