@@ -63,6 +63,24 @@ jobs:
           cp -r fonts _site/
           ls -lR _site
 
+      # The page prints a version in its footer and in the git tag -v line on the
+      # verify page. Both read one KW_VERSION, and this is where that comes from,
+      # so bumping the submodule cannot leave the page naming the old release.
+      # It has done exactly that twice. Editing the staged copy, not the tracked
+      # one, keeps the repository free of a number only the deploy knows.
+      - name: stamp the version the submodule pins
+        run: |
+          v=$(sed -n 's/^#define KW_VERSION "\(.*\)".*$/\1/p' koinu/include/kw_version.h)
+          [ -n "$v" ] || { echo "FAIL: no KW_VERSION in koinu/include/kw_version.h"; exit 1; }
+          sed -i -e "s|var KW_VERSION = \"[^\"]*\"|var KW_VERSION = \"$v\"|" \
+                 -e "s|<span data-ver=\"%s\">[^<]*</span>|<span data-ver=\"%s\">$v</span>|g" \
+                 _site/index.html
+          got=$(sed -n 's|.*var KW_VERSION = "\([^"]*\)".*|\1|p' _site/index.html)
+          [ "$got" = "$v" ] || { echo "FAIL: stamped '$got' but the header says '$v'"; exit 1; }
+          n=$(grep -c "<span data-ver=\"%s\">$v</span>" _site/index.html)
+          [ "$n" = "2" ] || { echo "FAIL: stamped $n no-script fallbacks, expected 2"; exit 1; }
+          echo "stamped $v into KW_VERSION and $n fallbacks"
+
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
