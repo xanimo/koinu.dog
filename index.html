@@ -275,13 +275,6 @@ dd { margin: 0; color: var(--graphite-soft); }
 .toc li span { display: block; color: var(--graphite-soft); font-size: 14.5px; }
 
 /* ── home ──────────────────────────────────────────────────────────── */
-.facts {
-  display: flex; flex-wrap: wrap; margin: 0 0 32px;
-  padding-top: 14px; border-top: 1px solid var(--rule); border-bottom: 2px solid var(--graphite);
-}
-.facts div { flex: 1 1 110px; padding: 0 16px 13px 0; }
-.facts b { display: block; font: 700 32px/1 var(--mono); letter-spacing: -.02em; }
-.facts span { font: 400 12.5px/1.4 var(--mono); color: var(--graphite-soft); }
 .thesis {
   margin: 10px 0 30px; font-size: 16.5px; line-height: 1.55;
   color: var(--graphite-soft); max-width: 62ch;
@@ -441,7 +434,6 @@ footer a:hover { color: var(--vermilion); }
   .mark { font-size: 24px; }
   h1 { font-size: 21px; }
   .deck, .thesis { font-size: 15.5px; }
-  .facts b { font-size: 26px; }
   code, pre.blk, .gut { font-size: 13.5px; }
   .plan pre { font-size: 10px; min-width: 560px; }
   dl { grid-template-columns: 1fr; gap: 0; }
@@ -449,7 +441,6 @@ footer a:hover { color: var(--vermilion); }
   .kv { grid-template-columns: 1fr; }
   .kv > span { margin-top: 5px; }
   .pager { flex-direction: column; }
-  .facts div { flex-basis: 50%; }
   .note { box-shadow: 4px 4px 0 var(--vermilion); }
   .try { box-shadow: 4px 4px 0 var(--blueline); }
 }
@@ -509,13 +500,6 @@ footer a:hover { color: var(--vermilion); }
 </svg>
     </div>
     <p class="thesis">one rule shapes the rest: the process holding keys is never the process talking to peers. the signing library references no function that can open a connection, and the build fails if one appears.</p>
-
-    <div class="facts">
-      <div><b>40</b><span>test binaries</span></div>
-      <div><b>322</b><span>verified spends</span></div>
-      <div><b>1</b><span>submodule</span></div>
-      <div><b>mit</b><span>and free</span></div>
-    </div>
 
     <p>every primitive it uses is in the tree, small enough to follow, and checked against published vectors, so the wallet doubles as a worked example of how a wallet works. sha2, ripemd160, hmac, pbkdf2, scrypt, argon2id, chacha20-poly1305, siphash, base58 and the bip158 golomb set live in <code>crypto/</code>, either vendored from a named upstream at a named commit or written here, and frozen.</p>
 
