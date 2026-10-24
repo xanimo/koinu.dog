@@ -637,7 +637,7 @@ kw psbt create | tx | sign | combine | sigs | finalize | extract</code></pre>
     <p>kw loads the header cache on every invocation, about 1.3 s and growing with the height. kwd pays that once, holds the chain and its peers open, and answers outpoint queries over a unix socket: confirmed or not, to what depth, spent or not. it holds no keys and opens no keystore, so a compromised kwd can lie about a confirmation and cannot sign.</p>
 <pre class="blk" data-lang="sh"><code>kwd --node NODE --headers h --filters f --socket /run/kwd.sock
 kw outpoint --daemon /run/kwd.sock --watch ADDR --outpoint TXID:VOUT --since H</code></pre>
-    <p>measured against mainnet at height 6380305 with a filter cache from a node serving bip158:</p>
+    <p>measured against mainnet at height 6380305 with a filter cache from a node serving bip158. the chain is past 6.4 million now, and the last two numbers grow with it, so read these as the shape of the cost rather than today's figures:</p>
 <pre class="blk" data-lang="fig" data-cap="mainnet at height 6380305, against a node serving bip158"><code>8 to 25 ms      repeated query
 287 ms          80000 block range
 2884 ms         first request after startup (pays the delta sync)
@@ -1043,7 +1043,7 @@ static int digishield(const kw_pow_rules *r, uint32_t height)
 
     <h2>anchors and the cache</h2>
     <p>below the newest block hash compiled into chainparams, the parallel download checks that each segment links and ends on its anchor, and checks no work. a hash names one chain where work only proves energy went into some chain, and the anchors are only as good as the release that carries them. <code>--validate-pow</code> trusts no anchor and hashes from height 1.</p>
-    <p>the cache stores each header with its hash so a load does not rehash six million records. that only proves each record agrees with the next one's claim, so the tip, every anchor height and every record above the newest anchor are rehashed: 20 ms, against 8.5 s for all of them on a cpu without sha-ni. a block body is refused unless its transactions hash to the header's merkle root, with a level holding an equal adjacent pair refused too (cve-2012-2459: an odd level repeats its last node, so two transaction lists can share a root).</p>
+    <p>the cache stores each header with its hash so a load does not rehash six million records. that only proves each record agrees with the next one's claim, so the tip, every anchor height and every record above the newest anchor are rehashed: 20 ms on the machine this was measured on, against 8.5 s there for all of them with sha-ni unavailable. a block body is refused unless its transactions hash to the header's merkle root, with a level holding an equal adjacent pair refused too (cve-2012-2459: an odd level repeats its last node, so two transaction lists can share a root).</p>
     <div class="pager"><a href="#/learn/shares"><span>previous</span>5. shares</a><a class="r" href="#/learn/auxpow"><span>next</span>7. auxpow</a></div>
   </section>
 
@@ -1122,7 +1122,7 @@ kw_hash256(buf, 64, out);</code></pre>
 
     <h2>what it leaks, and the catch</h2>
     <p>a peer still learns which blocks you fetched. that is weaker than an address query and not nothing, and tor moves the observer rather than removing them.</p>
-    <p class="note">the catch is practical. probing the peers dogecoin's dns seeds hand out, 47 of 48 answered and none advertised bip158. against the public network today the filter path does not run, and <code>--spv</code>, downloading every block in range and scanning it locally, is what is left. the filter backend needs a node you run with filters enabled. <a href="https://github.com/xanimo/koinu/blob/main/test/net_services.c">test/net_services.c</a> is the probe if you want to measure again.</p>
+    <p class="note">the catch is practical. probing the peers dogecoin's dns seeds hand out, 47 of 48 answered and none advertised bip158, the last time that probe was run. against the public network today the filter path does not run, and <code>--spv</code>, downloading every block in range and scanning it locally, is what is left. the filter backend needs a node you run with filters enabled. <a href="https://github.com/xanimo/koinu/blob/main/test/net_services.c">test/net_services.c</a> is the probe if you want to measure again.</p>
     <div class="pager"><a href="#/learn/auxpow"><span>previous</span>7. auxpow</a><a class="r" href="#/learn/peers"><span>next</span>9. peers</a></div>
   </section>
 
