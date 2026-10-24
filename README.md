@@ -22,8 +22,9 @@ because wasm linear memory has no pages to pin. it is a teaching build, not a
 wallet.
 
 the build is reproducible. ziglang 0.17.0 with the pinned submodules gives a
-byte-identical 406491-byte `koinu.wasm`, and the deploy prints its sha256, so a
-local run can be compared against what is published.
+byte-identical `koinu.wasm`, and the deploy prints its sha256, so a local run
+can be compared against what is published. at koinu v0.4.0 that is 406571
+bytes.
 
 ## moving to a newer koinu
 
