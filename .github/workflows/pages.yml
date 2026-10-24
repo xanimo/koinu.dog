@@ -52,14 +52,16 @@ jobs:
       - name: the wasm this deploy is publishing
         run: sha256sum koinu.wasm
 
-      # Only the three files the page fetches. The repository root also holds
-      # kw_web.c, build.sh and the whole koinu submodule, and none of that
+      # Only what the page fetches: the three files plus fonts/, which it serves
+      # itself rather than calling out to google for. The repository root also
+      # holds kw_web.c, build.sh and the whole koinu submodule, and none of that
       # belongs on a web server.
       - name: stage the site
         run: |
           mkdir -p _site
           cp index.html koinu.js koinu.wasm _site/
-          ls -l _site
+          cp -r fonts _site/
+          ls -lR _site
 
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
 

@@ -5,10 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>koinu</title>
 <meta name="description" content="koinu: a dogecoin wallet in c, built from the crypto up, and a walk through how a wallet works. mit licensed, free.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
+/* ── faces ─────────────────────────────────────────────────────────── */
+/* self-hosted: a page about a wallet that talks to nobody should not ask
+   google for its type on every load. subsets built from the system ttfs with
+   pyftsubset; licences in fonts/. the draw face is dejavu over the box and
+   arrow ranges only, since ubuntu mono carries neither U+2571/2572 nor U+2197. */
+@font-face{font-family:'Ubuntu';src:url(fonts/ubuntu-400.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Ubuntu';src:url(fonts/ubuntu-500.woff2) format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Ubuntu';src:url(fonts/ubuntu-700.woff2) format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Ubuntu Mono';src:url(fonts/mono-400.woff2) format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Ubuntu Mono';src:url(fonts/mono-700.woff2) format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Ubuntu Mono';src:url(fonts/mono-draw.woff2) format('woff2');font-weight:400 700;font-style:normal;font-display:swap;unicode-range:U+2190-21FF,U+2500-259F,U+25A0-25FF}
+
 /* ── tokens: lifted from koinu-ui.html ─────────────────────────────── */
 :root {
   --vellum: #DCD8CB;
