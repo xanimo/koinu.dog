@@ -7,155 +7,523 @@
 <meta name="description" content="koinu: a dogecoin wallet in c, built from the crypto up, and a walk through how a wallet works. mit licensed, free.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500&family=Ubuntu+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* ── tokens: lifted from koinu-ui.html ─────────────────────────────── */
 :root {
-  --bg: #ffffff;
-  --fg: #111214;
-  --dim: #6b6f76;
-  --rule: #e6e8eb;
-  --code: #f4f5f7;
-  --accent: #c99a06;
+  --vellum: #DCD8CB;
+  --vellum-2: #D2CDBE;
+  --graphite: #23211C;
+  --graphite-soft: #5A554A;
+  --ghost: #8A8575;
+  --blueline: #4A6B7C;
+  --doge: #9C8420;
+  --vermilion: #A63D2F;
+  --rule: #B6B0A0;
+  --face: #E4E0D4;
+  --face-2: #EDEAE0;
+  --mono: 'Ubuntu Mono', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  --sans: 'Ubuntu', 'DejaVu Sans', 'Liberation Sans', system-ui, sans-serif;
+  --rail: 188px;
+  --topbar: 66px;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0c0e;
-    --fg: #e6e8eb;
-    --dim: #8a8f98;
-    --rule: #1f2227;
-    --code: #15171a;
-    --accent: #e0b022;
-  }
-}
+
+/* ── the sheet ─────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 400 17px/1.65 "Ubuntu", system-ui, sans-serif;
+  background: var(--vellum);
+  background-image:
+    linear-gradient(var(--vellum-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vellum-2) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--graphite);
+  font: 400 16px/1.6 var(--sans);
 }
-main { max-width: 700px; margin: 0 auto; padding: 48px 20px 80px; }
-header { margin-bottom: 48px; }
-.mark { display: inline-block; font-weight: 500; font-size: 22px; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; margin-bottom: 14px; }
-.mark span { color: var(--accent); }
-nav { display: flex; gap: 4px 14px; flex-wrap: wrap; align-items: baseline; margin-bottom: 4px; }
-nav b { font-weight: 400; color: var(--dim); font-size: 13px; width: 44px; font-family: "Ubuntu Mono", monospace; }
-nav a { color: var(--dim); text-decoration: none; font-size: 15px; }
-nav a:hover, nav a[aria-current="page"] { color: var(--fg); }
-nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
-h1 { font-weight: 500; font-size: 30px; line-height: 1.25; margin: 0 0 20px; letter-spacing: -0.015em; }
-h2 { font-weight: 500; font-size: 18px; margin: 44px 0 10px; }
-p { margin: 0 0 16px; }
-a { color: var(--fg); text-decoration-color: var(--accent); text-underline-offset: 3px; }
-code, pre { font-family: "Ubuntu Mono", ui-monospace, monospace; font-size: 15.5px; }
-code { background: var(--code); padding: 1px 5px; border-radius: 3px; }
-pre { background: var(--code); padding: 14px 16px; border-radius: 4px; overflow-x: auto; margin: 0 0 20px; line-height: 1.5; }
-pre code { background: none; padding: 0; }
-pre .c { color: var(--dim); }
-.dim { color: var(--dim); }
-.kicker { font-size: 14px; color: var(--dim); margin: 0 0 6px; font-family: "Ubuntu Mono", monospace; }
-.src { font-size: 14px; color: var(--dim); margin: -8px 0 20px; }
-.src a { color: var(--dim); font-family: "Ubuntu Mono", monospace; }
-ul.plain, ol.plain { list-style: none; padding: 0; margin: 0 0 20px; }
-ul.plain li, ol.plain li { padding: 7px 0; border-top: 1px solid var(--rule); }
-ul.plain li:last-child, ol.plain li:last-child { border-bottom: 1px solid var(--rule); }
-ol.plain { counter-reset: n; }
-ol.plain li { counter-increment: n; display: grid; grid-template-columns: 28px 1fr; }
-ol.plain li::before { content: counter(n); color: var(--dim); font-family: "Ubuntu Mono", monospace; }
-ol.toc li a { text-decoration: none; }
-ol.toc li span { color: var(--dim); }
-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0 0 20px; }
-dt { font-family: "Ubuntu Mono", monospace; }
-dd { margin: 0; color: var(--dim); }
-.note { border-left: 2px solid var(--accent); padding: 2px 0 2px 14px; margin: 0 0 20px; }
-.pager { margin-top: 52px; padding-top: 16px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
-.pager a { color: var(--fg); text-decoration: none; }
-.pager a span { color: var(--dim); display: block; font-size: 13px; }
-.pager .r { text-align: right; margin-left: auto; }
-footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-footer a { color: var(--dim); }
-.try { border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px 16px; margin: 8px 0 28px; }
-.try-h { font-family: "Ubuntu Mono", monospace; font-size: 14px; margin: 0 0 12px; }
-.try-h span { color: var(--dim); font-family: "Ubuntu", sans-serif; display: block; font-size: 13px; }
-.try label { display: block; font-size: 13px; color: var(--dim); margin: 0 0 10px; flex: 1 1 140px; min-width: 0; }
-.try input, .try textarea, .try select { display: block; width: 100%; margin-top: 4px; font: 14px/1.4 "Ubuntu Mono", ui-monospace, monospace; color: var(--fg); background: var(--code); border: 1px solid var(--rule); border-radius: 4px; padding: 7px 9px; resize: vertical; }
-.try input:focus, .try textarea:focus, .try select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-.try .row { display: flex; gap: 0 12px; flex-wrap: wrap; }
-.try .warn { font-size: 13px; color: var(--dim); margin: 2px 0 12px; }
-.try .warn a { color: var(--dim); }
-.btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.try button { font: 14px "Ubuntu", sans-serif; color: var(--bg); background: var(--fg); border: 0; border-radius: 4px; padding: 7px 12px; cursor: pointer; }
-.try button + button { color: var(--fg); background: transparent; border: 1px solid var(--rule); }
-.try button:hover { opacity: .85; }
-.out:not(:empty) { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 10px; }
-.kv { display: grid; grid-template-columns: 9.5em 1fr; gap: 2px 12px; padding: 3px 0; font-size: 14px; }
-.kv > span { color: var(--dim); }
-.kv > code { background: none; padding: 0; word-break: break-all; font-size: 14px; }
-.kv > code em { font-style: normal; color: var(--dim); }
-.kv.good > code { color: #2f8f4e; } .kv.bad > code { color: #c4402f; }
-.share { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--rule); font: 13px/1.5 "Ubuntu Mono", monospace; word-break: break-word; }
-.share input { width: auto; margin-top: 3px; flex: none; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
-.try .chips button { font: 12px "Ubuntu Mono", monospace; padding: 3px 7px; color: var(--fg); background: transparent; border: 1px solid var(--rule); }
-.vals { font: 13px/1.6 "Ubuntu Mono", monospace; color: var(--dim); word-break: break-word; }
-.vals b { font-weight: 400; color: var(--fg); background: color-mix(in srgb, var(--accent) 30%, transparent); padding: 0 3px; border-radius: 2px; }
-@media (max-width: 520px) { .kv { grid-template-columns: 1fr; } .kv > span { margin-top: 4px; } }
+.top {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--vellum);
+  border-bottom: 2px solid var(--graphite);
+}
+.top-in {
+  max-width: 1012px; margin: 0 auto; padding: 0 20px;
+  height: var(--topbar); display: flex; align-items: baseline; gap: 20px;
+}
+.mark {
+  font: 700 30px/1 var(--mono); letter-spacing: -.02em;
+  color: var(--graphite); text-decoration: none; align-self: center;
+}
+.mark span { color: var(--doge); }
+.top-nav { display: flex; gap: 20px; margin-left: auto; align-self: center; }
+.top-nav a {
+  font: 400 14px/1 var(--mono); color: var(--graphite-soft); text-decoration: none;
+  padding: 4px 0 3px; border-bottom: 2px solid transparent;
+}
+.top-nav a:hover { color: var(--graphite); }
+.top-nav a[aria-current] { color: var(--graphite); border-bottom-color: var(--doge); }
+.ext { color: var(--ghost); font-size: 11px; }
+
+.shell {
+  max-width: 1012px; margin: 0 auto; padding: 34px 20px 90px;
+  display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 0 48px;
+  align-items: start;
+}
+main { max-width: 700px; min-width: 0; }
 section[hidden] { display: none; }
-@media (max-width: 520px) {
-  body { font-size: 16px; }
-  h1 { font-size: 26px; }
-  code, pre { font-size: 14px; }
-  dl { grid-template-columns: 1fr; gap: 0 0; }
+
+/* ── rail: the ledger's "you are here" marker ──────────────────────── */
+.rail { position: sticky; top: calc(var(--topbar) + 26px); }
+.rail-grp { margin: 0 0 24px; }
+.rail-lbl {
+  font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ghost); margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--rule);
+}
+.rail ul { list-style: none; margin: 0; padding: 0; }
+.rail a, .rail button {
+  display: flex; gap: 9px; width: 100%; text-align: left; cursor: pointer;
+  font: 400 13px/1.5 var(--mono); color: var(--graphite-soft);
+  background: none; border: 0; border-bottom: 1px solid var(--vellum-2);
+  padding: 6px 8px; text-decoration: none;
+}
+.rail a:hover, .rail button:hover { color: var(--graphite); background: var(--face); }
+.rail a[aria-current] {
+  color: var(--graphite); background: var(--face);
+  box-shadow: inset 3px 0 0 var(--doge);
+}
+.rail .n { color: var(--blueline); }
+.rail a[aria-current] .n { color: var(--doge); }
+.rail button { font-size: 12.5px; color: var(--blueline); }
+
+/* ── type ──────────────────────────────────────────────────────────── */
+h1 { font: 700 25px/1.25 var(--mono); letter-spacing: -.02em; margin: 0 0 11px; }
+h2 {
+  font: 400 13px/1.4 var(--mono); color: var(--graphite-soft);
+  margin: 42px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--topbar) + 20px); letter-spacing: .02em;
+}
+p { margin: 0 0 15px; }
+a { color: var(--graphite); text-decoration-color: var(--blueline); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--vermilion); }
+sup { font-size: .72em; }
+.dim { color: var(--graphite-soft); }
+
+.head { margin: 0 0 28px; }
+.kicker {
+  font: 400 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ghost); margin: 0 0 12px; display: flex; gap: 8px; align-items: center;
+}
+.kicker b { font-weight: 400; color: var(--doge); }
+.kicker i { color: var(--rule); font-style: normal; }
+.deck { font-size: 16.5px; line-height: 1.5; color: var(--graphite-soft); margin: 0; max-width: 48ch; }
+.files {
+  margin: 16px 0 0; padding-top: 11px; border-top: 1px solid var(--rule);
+  display: flex; flex-wrap: wrap; gap: 3px 14px; font: 400 12.5px/1.6 var(--mono);
+}
+.files em {
+  font-style: normal; color: var(--ghost); letter-spacing: .14em;
+  text-transform: uppercase; font-size: 10.5px;
+}
+.files a { color: var(--blueline); text-decoration: none; border-bottom: 1px solid var(--rule); }
+.files a:hover { color: var(--vermilion); border-bottom-color: var(--vermilion); }
+
+code {
+  font: 400 15px var(--mono); background: var(--face);
+  padding: 1px 4px; box-shadow: 0 0 0 1px var(--vellum-2);
+}
+a code { color: inherit; }
+
+/* ── code panels: drafting-sheet furniture ─────────────────────────── */
+.blk-wrap { margin: 0 0 24px; }
+.blk-bar {
+  display: flex; align-items: baseline; gap: 12px;
+  font: 400 12px/1 var(--mono); color: var(--graphite-soft); padding: 0 0 7px;
+}
+.blk-src { color: var(--blueline); text-decoration: none; border-bottom: 1px solid var(--rule); }
+.blk-src:hover { color: var(--vermilion); border-bottom-color: var(--vermilion); }
+.blk-src::after { content: " \2197"; color: var(--ghost); }
+.blk-tag {
+  margin-left: auto; color: var(--ghost); letter-spacing: .16em;
+  text-transform: uppercase; font-size: 10.5px;
+}
+.blk-copy {
+  margin-left: 0; font: 400 10.5px/1 var(--mono); letter-spacing: .14em;
+  text-transform: uppercase; color: var(--graphite-soft);
+  background: var(--face); border: 1px solid var(--rule); padding: 3px 7px; cursor: pointer;
+}
+.blk-copy:hover { color: var(--vermilion); border-color: var(--vermilion); }
+.blk-body { overflow-x: auto; }
+pre.blk { font: 400 14.5px/1.6 var(--mono); margin: 0; }
+pre.blk code { background: none; padding: 0; box-shadow: none; font-size: inherit; }
+
+/* a command you are meant to take: an extruded block */
+.blk-wrap[data-lang="sh"] .blk-body {
+  background: var(--face); border: 2px solid var(--graphite);
+  box-shadow: 5px 5px 0 var(--blueline);
+}
+.blk-wrap[data-lang="sh"] pre.blk { padding: 12px 15px; }
+
+/* quoted source: a flat leaf with a counted gutter and the ledger's doge bar */
+.blk-wrap[data-lang="c"] .blk-body {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  background: var(--face); border: 1px solid var(--rule);
+  box-shadow: inset 3px 0 0 var(--doge);
+}
+.gut {
+  font: 400 14.5px/1.6 var(--mono); color: var(--ghost); text-align: right;
+  padding: 9px 11px 9px 14px; border-right: 1px solid var(--vellum-2);
+  user-select: none; -webkit-user-select: none; white-space: pre;
+}
+.blk-wrap[data-lang="c"] pre.blk { padding: 9px 14px; }
+
+/* a drawing on the sheet itself: no ground, just rules */
+.blk-wrap[data-lang="fig"] .blk-body {
+  border-top: 2px solid var(--graphite); border-bottom: 1px solid var(--rule);
+}
+.blk-wrap[data-lang="fig"] pre.blk { padding: 10px 0; font-size: 14px; line-height: 1.65; }
+.blk-wrap[data-lang="fig"] figcaption {
+  font: 400 12px/1.5 var(--mono); color: var(--ghost); padding-top: 7px;
+}
+
+/* three inks: blueline for koinu's own symbols, doge for numbers, vermilion for strings */
+pre.blk .c { color: var(--graphite-soft); }
+pre.blk .s { color: var(--vermilion); }
+pre.blk .n { color: var(--doge); }
+pre.blk .k { color: var(--graphite); font-weight: 700; }
+pre.blk .a { color: var(--blueline); font-weight: 700; }
+pre.blk .p { color: var(--doge); background: rgba(156, 132, 32, .13); padding: 0 2px; }
+pre.blk .d { color: var(--rule); }
+
+/* ── the isometric hero ────────────────────────────────────────────── */
+/* drawn, not typed: the ascii version depended on a font carrying U+2571,
+   on line-height 1, and on nobody editing a label. all three broke. */
+.plan { margin: 22px 0 30px; }
+.plan svg { display: block; width: 100%; max-width: 640px; height: auto; }
+.plan .face { fill: var(--face); }
+.plan .top  { fill: var(--face-2); }
+.plan .side { fill: var(--vellum-2); }
+.plan .iso rect, .plan .iso polygon {
+  stroke: var(--graphite); stroke-width: 1.5; stroke-linejoin: round;
+}
+.plan text { font: 400 13px var(--mono); }
+.plan .l1 { fill: var(--graphite); font-weight: 700; }
+.plan .l2 { fill: var(--blueline); }
+.plan .l3 { fill: var(--graphite); }
+.plan .cap, .plan .cap2 { text-anchor: middle; font-size: 12.5px; }
+.plan .cap  { fill: var(--doge); }
+.plan .cap2 { fill: var(--graphite-soft); }
+.plan .wire { stroke: var(--blueline); stroke-width: 1.5; fill: none; }
+.plan marker path { fill: var(--blueline); }
+
+/* ── lists, definitions, asides ────────────────────────────────────── */
+ul.plain, ol.plain { list-style: none; padding: 0; margin: 0 0 20px; }
+ul.plain li, ol.plain li { padding: 8px 0; border-bottom: 1px solid var(--vellum-2); }
+ul.plain li:first-child, ol.plain li:first-child { border-top: 1px solid var(--rule); }
+ol.plain { counter-reset: n; }
+ol.plain li { counter-increment: n; display: grid; grid-template-columns: 32px 1fr; }
+ol.plain li::before {
+  content: counter(n, decimal-leading-zero);
+  font: 400 12.5px var(--mono); color: var(--doge); padding-top: 4px;
+}
+ul.cols { columns: 2; column-gap: 28px; }
+ul.cols li { break-inside: avoid; font-size: 14.5px; line-height: 1.5; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 22px; margin: 0 0 20px; font-size: 15px; }
+dt { font: 400 14.5px var(--mono); color: var(--blueline); }
+dd { margin: 0; color: var(--graphite-soft); }
+
+/* the confirmation slip, reused for the things that want stopping at */
+.note {
+  margin: 0 0 24px; padding: 16px 18px; max-width: 560px;
+  background: var(--face); border: 2px solid var(--vermilion);
+  box-shadow: 7px 7px 0 var(--vermilion); font-size: 15px;
+}
+.note::before {
+  content: "read this twice"; display: block;
+  font: 700 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--vermilion); margin-bottom: 8px;
+}
+.src { font: 400 12.5px/1.6 var(--mono); color: var(--ghost); margin: -6px 0 20px; }
+.src a { color: var(--blueline); text-decoration: none; border-bottom: 1px solid var(--rule); }
+.src a:hover { color: var(--vermilion); border-bottom-color: var(--vermilion); }
+
+/* ── contents, in four parts ───────────────────────────────────────── */
+.toc { margin: 0 0 22px; }
+.part {
+  font: 400 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ghost); margin: 28px 0 8px; display: flex; gap: 9px;
+}
+.part:first-child { margin-top: 0; }
+.part em { font-style: normal; color: var(--doge); }
+.toc ol.plain { margin: 0; }
+/* ::before holds column 1; keep both children out of it or the blurb
+   wraps one word per line in a 32px track */
+.toc li a, .toc li span { grid-column: 2; }
+.toc li a { font: 700 15px var(--mono); text-decoration: none; color: var(--graphite); }
+.toc li a:hover { color: var(--vermilion); }
+.toc li span { display: block; color: var(--graphite-soft); font-size: 14.5px; }
+
+/* ── home ──────────────────────────────────────────────────────────── */
+.facts {
+  display: flex; flex-wrap: wrap; margin: 0 0 32px;
+  padding-top: 14px; border-top: 1px solid var(--rule); border-bottom: 2px solid var(--graphite);
+}
+.facts div { flex: 1 1 110px; padding: 0 16px 13px 0; }
+.facts b { display: block; font: 700 32px/1 var(--mono); letter-spacing: -.02em; }
+.facts span { font: 400 12.5px/1.4 var(--mono); color: var(--graphite-soft); }
+.thesis {
+  margin: 10px 0 30px; font-size: 16.5px; line-height: 1.55;
+  color: var(--graphite-soft); max-width: 62ch;
+}
+.doors { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 0 0 14px; }
+.door {
+  display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: var(--graphite);
+  background: var(--face); border: 2px solid var(--graphite); padding: 15px 17px 14px;
+  box-shadow: 5px 5px 0 var(--blueline);
+  transition: transform .06s steps(2), box-shadow .06s steps(2);
+}
+.door:hover { box-shadow: 6px 6px 0 var(--blueline); transform: translate(-1px, -1px); }
+.door:active { box-shadow: 1px 1px 0 var(--blueline); transform: translate(4px, 4px); }
+.door b { font: 700 16px/1.2 var(--mono); }
+.door span { font-size: 14.5px; line-height: 1.5; color: var(--graphite-soft); flex: 1; }
+.door i { font: 400 12.5px/1 var(--mono); font-style: normal; color: var(--blueline); }
+
+/* ── pager, footer ─────────────────────────────────────────────────── */
+.pager { margin-top: 50px; display: flex; gap: 18px; }
+.pager a {
+  flex: 1 1 0; min-width: 0; text-decoration: none; color: var(--graphite);
+  background: var(--face); border: 2px solid var(--graphite); padding: 10px 14px;
+  font: 400 14px var(--mono); box-shadow: 4px 4px 0 var(--blueline);
+  transition: transform .06s steps(2), box-shadow .06s steps(2);
+}
+.pager a:hover { box-shadow: 5px 5px 0 var(--blueline); transform: translate(-1px, -1px); }
+.pager a:active { box-shadow: 1px 1px 0 var(--blueline); transform: translate(3px, 3px); }
+.pager a span {
+  display: block; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ghost); margin-bottom: 5px;
+}
+.pager .r { text-align: right; margin-left: auto; }
+.pager a:only-child { flex: 0 1 54%; }
+footer {
+  margin-top: 72px; padding-top: 14px; border-top: 2px solid var(--graphite);
+  font: 400 12.5px/1.6 var(--mono); color: var(--graphite-soft);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+footer a { color: var(--blueline); text-decoration: none; border-bottom: 1px solid var(--rule); }
+footer a:hover { color: var(--vermilion); }
+
+/* ── run-it panels: an instrument on the sheet ─────────────────────── */
+.try {
+  margin: 10px 0 28px; background: var(--face);
+  border: 2px solid var(--graphite); box-shadow: 6px 6px 0 var(--blueline);
+}
+.try > * { padding-left: 16px; padding-right: 16px; }
+.try-h {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0;
+  padding-top: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--rule);
+  font: 700 13px/1.3 var(--mono); color: var(--graphite);
+}
+.try-h::before {
+  content: ""; width: 8px; height: 8px; background: var(--doge);
+  flex: none; align-self: center; box-shadow: 0 0 0 1px var(--graphite);
+}
+.try-h span { font: 400 12.5px/1.4 var(--sans); color: var(--graphite-soft); display: inline; }
+.try > label, .try .row { margin: 0; padding-top: 11px; }
+.try label {
+  display: block; flex: 1 1 150px; min-width: 0;
+  font: 400 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ghost);
+}
+.try input, .try textarea, .try select {
+  display: block; width: 100%; margin-top: 5px; resize: vertical;
+  font: 400 13.5px/1.5 var(--mono); color: var(--graphite);
+  background: var(--face-2); border: 1px solid var(--rule); padding: 7px 9px;
+}
+.try input:focus, .try textarea:focus, .try select:focus {
+  outline: 2px solid var(--blueline); outline-offset: -1px; background: #fff;
+}
+.try .row { display: flex; gap: 0 14px; flex-wrap: wrap; }
+.try .row label { padding: 0; }
+.try .warn {
+  font-size: 13px; line-height: 1.5; color: var(--graphite-soft);
+  margin: 11px 0 0; padding-left: 32px; position: relative;
+}
+.try .warn::before {
+  content: "!"; position: absolute; left: 16px; top: 0;
+  font: 700 13px var(--mono); color: var(--vermilion);
+}
+.try .warn a { color: var(--blueline); }
+.btns { display: flex; gap: 14px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 16px; }
+.try button {
+  position: relative; background: var(--face-2); border: 2px solid var(--graphite);
+  font: 400 13.5px var(--mono); color: var(--graphite); padding: 7px 14px 6px;
+  cursor: pointer; user-select: none; box-shadow: 4px 4px 0 var(--blueline);
+  transition: transform .06s steps(2), box-shadow .06s steps(2);
+}
+.try button:hover { box-shadow: 5px 5px 0 var(--blueline); transform: translate(-1px, -1px); }
+.try button:active { box-shadow: 1px 1px 0 var(--blueline); transform: translate(3px, 3px); }
+.try button:focus-visible { outline: 2px solid var(--vermilion); outline-offset: 3px; }
+/* the destructive demonstrations wear vermilion, as the spend block does */
+.try button[data-act^="flip"] { border-color: var(--vermilion); box-shadow: 4px 4px 0 var(--vermilion); }
+.try button[data-act^="flip"]:hover { box-shadow: 5px 5px 0 var(--vermilion); }
+.try button[data-act^="flip"]:active { box-shadow: 1px 1px 0 var(--vermilion); }
+.out:not(:empty) {
+  background: var(--face-2); border-top: 1px solid var(--rule);
+  padding-top: 12px; padding-bottom: 14px;
+}
+.kv {
+  display: grid; grid-template-columns: 10em 1fr; gap: 2px 14px;
+  padding: 2.5px 0; font-size: 13.5px;
+}
+.kv > span { color: var(--ghost); font: 400 12px/1.7 var(--mono); }
+.kv > code {
+  background: none; padding: 0; box-shadow: none; word-break: break-all;
+  font-size: 13.5px; line-height: 1.6; font-variant-numeric: tabular-nums;
+}
+.kv > code em { font-style: normal; color: var(--ghost); }
+.kv.good > code { color: var(--blueline); font-weight: 700; }
+/* a refusal the page meant to show: not an error */
+.kv.want > code { color: var(--doge); font-weight: 700; }
+.kv.want > span { color: var(--doge); }
+.kv.bad > code { color: var(--vermilion); font-weight: 700; }
+.share {
+  display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; cursor: pointer;
+  border-bottom: 1px solid var(--vellum-2); font: 400 12.5px/1.55 var(--mono); word-break: break-word;
+  /* .share is a <label>: undo the field-label casing above */
+  text-transform: none; letter-spacing: normal; color: var(--graphite);
+}
+.share:hover { background: var(--face); }
+.share input { width: auto; margin-top: 4px; flex: none; accent-color: var(--vermilion); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 5px 0 3px; }
+.try .chips button {
+  font: 400 11.5px var(--mono); padding: 3px 8px; border-width: 1px;
+  box-shadow: 2px 2px 0 var(--blueline);
+}
+.try .chips button:hover { box-shadow: 3px 3px 0 var(--blueline); }
+.vals { font: 400 12.5px/1.7 var(--mono); color: var(--graphite-soft); word-break: break-word; }
+.vals b { font-weight: 400; color: var(--graphite); background: rgba(156, 132, 32, .3); padding: 0 3px; }
+
+/* ── narrow ────────────────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 0; }
+  .rail {
+    position: sticky; top: var(--topbar); z-index: 9; margin: 0 -20px 28px; padding: 0 20px;
+    background: var(--vellum); border-bottom: 2px solid var(--graphite);
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .rail-grp { margin: 0; }
+  .rail-grp + .rail-grp, .rail-lbl { display: none; }
+  .rail ul { display: flex; gap: 0; }
+  .rail li { flex: none; }
+  .rail a {
+    border-bottom: 0; border-top: 3px solid transparent; padding: 10px 10px; white-space: nowrap;
+  }
+  .rail a[aria-current] { box-shadow: none; border-top-color: var(--doge); }
+  .rail .n { display: none; }
+  main { max-width: none; }
+}
+@media (max-width: 620px) {
+  .doors { grid-template-columns: 1fr; }
+  ul.cols { columns: 1; }
+}
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .mark { font-size: 24px; }
+  h1 { font-size: 21px; }
+  .deck, .thesis { font-size: 15.5px; }
+  .facts b { font-size: 26px; }
+  code, pre.blk, .gut { font-size: 13.5px; }
+  .plan pre { font-size: 10px; min-width: 560px; }
+  dl { grid-template-columns: 1fr; gap: 0; }
   dd { margin-bottom: 10px; }
+  .kv { grid-template-columns: 1fr; }
+  .kv > span { margin-top: 5px; }
+  .pager { flex-direction: column; }
+  .facts div { flex-basis: 50%; }
+  .note { box-shadow: 4px 4px 0 var(--vermilion); }
+  .try { box-shadow: 4px 4px 0 var(--blueline); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .try button, .door, .pager a { transition: none; }
 }
 </style>
 </head>
 <body>
-<main>
-  <header>
+<header class="top">
+  <div class="top-in">
     <a class="mark" href="#/">koinu<span>.</span></a>
-    <nav>
-      <b>use</b>
-      <a href="#/start">start</a>
-      <a href="#/spend">spend</a>
-      <a href="#/backup">backup</a>
-      <a href="#/kwd">kwd</a>
-      <a href="#/kwui">kwui</a>
-      <a href="#/library">library</a>
-      <a href="#/verify">verify</a>
-      <a href="https://github.com/xanimo/koinu">source</a>
+    <nav class="top-nav">
+      <a href="#/start" data-grp="use">use</a>
+      <a href="#/learn" data-grp="learn">learn</a>
+      <a href="https://github.com/xanimo/koinu">source <span class="ext">&#8599;</span></a>
     </nav>
-    <nav>
-      <b>learn</b>
-      <a href="#/learn">contents</a>
-      <a href="#/learn/keys">keys</a>
-      <a href="#/learn/keystore">keystore</a>
-      <a href="#/learn/memory">memory</a>
-      <a href="#/learn/transactions">transactions</a>
-      <a href="#/learn/shares">shares</a>
-      <a href="#/learn/headers">headers</a>
-      <a href="#/learn/auxpow">auxpow</a>
-      <a href="#/learn/filters">filters</a>
-      <a href="#/learn/peers">peers</a>
-      <a href="#/learn/boundary">boundary</a>
-      <a href="#/learn/threats">threats</a>
-    </nav>
-  </header>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="rail" id="rail"></aside>
+  <main>
 
   <!-- ───────────────────────── home ───────────────────────── -->
   <section data-route="/">
     <h1>a dogecoin wallet in c, built from the crypto up.</h1>
-    <p>koinu is mit licensed and free. there is no account, no server, no telemetry and no fee. it is also meant to be read: every primitive it uses is in the tree, small enough to follow, and checked against published vectors, so the wallet doubles as a worked example of how a wallet works.</p>
-    <p>libsecp256k1 is the only submodule. sha2, ripemd160, hmac, pbkdf2, scrypt, argon2id, chacha20-poly1305, siphash, base58 and the bip158 golomb set live in <code>crypto/</code>, either vendored from a named upstream at a named commit or written here, and frozen.</p>
-    <p>one rule shapes the rest: the process holding keys is never the process talking to peers. the signing library references no function that can open a connection, and the build fails if one appears.</p>
+    <p class="deck">no account, no server, no telemetry, no fee. mit licensed and free, and meant to be read.</p>
+
+    <div class="plan">
+<svg viewBox="0 0 640 158" role="img" aria-label="two processes side by side. the signer holds the seed and opens no socket. the network holds the socket and never sees a key. a signed transaction crosses from the signer to the network; nothing comes back.">
+  <defs>
+    <marker id="kw-ar" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 4 L0 8 Z"/>
+    </marker>
+  </defs>
+  <g class="iso">
+    <polygon class="top"  points="10,46 36,26 236,26 210,46"/>
+    <polygon class="side" points="210,46 236,26 236,112 210,132"/>
+    <rect    class="face" x="10" y="46" width="200" height="86"/>
+    <text class="l1" x="26" y="73">the signer</text>
+    <text class="l2" x="26" y="93">holds the seed</text>
+    <text class="l3" x="26" y="113">opens no socket</text>
+  </g>
+  <g class="iso">
+    <polygon class="top"  points="390,46 416,26 616,26 590,46"/>
+    <polygon class="side" points="590,46 616,26 616,112 590,132"/>
+    <rect    class="face" x="390" y="46" width="200" height="86"/>
+    <text class="l1" x="406" y="73">the network</text>
+    <text class="l2" x="406" y="93">holds the socket</text>
+    <text class="l3" x="406" y="113">never sees a key</text>
+  </g>
+  <text class="cap"  x="313" y="62">signed tx</text>
+  <line class="wire" x1="248" y1="76" x2="378" y2="76" marker-end="url(#kw-ar)"/>
+  <line class="wire" x1="378" y1="104" x2="248" y2="104" marker-end="url(#kw-ar)"/>
+  <text class="cap2" x="313" y="124">nothing</text>
+</svg>
+    </div>
+    <p class="thesis">one rule shapes the rest: the process holding keys is never the process talking to peers. the signing library references no function that can open a connection, and the build fails if one appears.</p>
+
+    <div class="facts">
+      <div><b>40</b><span>test binaries</span></div>
+      <div><b>322</b><span>verified spends</span></div>
+      <div><b>1</b><span>submodule</span></div>
+      <div><b>mit</b><span>and free</span></div>
+    </div>
+
+    <p>every primitive it uses is in the tree, small enough to follow, and checked against published vectors, so the wallet doubles as a worked example of how a wallet works. sha2, ripemd160, hmac, pbkdf2, scrypt, argon2id, chacha20-poly1305, siphash, base58 and the bip158 golomb set live in <code>crypto/</code>, either vendored from a named upstream at a named commit or written here, and frozen.</p>
 
     <h2>two ways in</h2>
-    <p><a href="#/start">use it</a>: build, make a wallet, back it up, spend. the commands and what each one guarantees.</p>
-    <p><a href="#/learn">learn from it</a>: eleven short chapters that start at 256 random bits and end at choosing between three peers' chains, quoting the code that does each step and linking the file it lives in.</p>
+    <div class="doors">
+      <a class="door" href="#/start">
+        <b>use it</b>
+        <span>build, make a wallet, back it up, spend. the commands and what each one guarantees.</span>
+        <i>start &rarr;</i>
+      </a>
+      <a class="door" href="#/learn">
+        <b>learn from it</b>
+        <span>eleven short chapters from 256 random bits to choosing between three peers' chains, quoting the code that does each step.</span>
+        <i>contents &rarr;</i>
+      </a>
+    </div>
 
     <h2>what it does</h2>
-    <ul class="plain">
+    <ul class="plain cols">
       <li>bip39 mnemonics of 12 or 24 words, bip32 derivation, bip44 accounts, seed sealed under argon2id and chacha20-poly1305</li>
       <li>p2pkh addresses, wif import, base58check on mainnet, testnet and regtest</li>
       <li>legacy transaction building and signing, byte for byte against libdogecoin's signer on 322 spends the network already accepted</li>
@@ -170,19 +538,22 @@ section[hidden] { display: none; }
 
   <!-- ───────────────────────── use: start ───────────────────────── -->
   <section data-route="/start" hidden>
-    <p class="kicker">use / start</p>
-    <h1>build, then make a wallet</h1>
-<pre><code>git clone --recursive https://github.com/xanimo/koinu
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> start</p>
+      <h1>build, then make a wallet</h1>
+      <p class="deck">clone, build, and make a wallet. what each command guarantees, and what it refuses.</p>
+    </div>
+<pre class="blk" data-lang="sh"><code>git clone --recursive https://github.com/xanimo/koinu
 cd koinu
 make check      <span class="c"># builds libkw.a and kw, runs the tests</span>
 make asan       <span class="c"># the same under address and ub sanitizers</span></code></pre>
     <p><code>--recursive</code> is not optional. libsecp256k1 is a submodule, so a plain clone leaves <code>depends/secp256k1</code> empty and the build stops on a missing <code>secp256k1.h</code>. in a clone you already have, run <code>git submodule update --init</code>. check a release tag against the key on the <a href="#/verify">verify</a> page before building it.</p>
-    <p>the suite is 43 binaries, every primitive against published vectors where they exist, and the fuzz corpus replays its seeds under asan and ubsan before mutating. ci runs it on linux x86_64 under gcc and clang, on linux i386 and on macos arm64.</p>
-<pre><code>make split                      <span class="c"># libkoinu-sign.a and libkoinu-chain.a</span>
+    <p>the suite is 40 binaries and 8 shell gates, every primitive against published vectors where they exist, and the fuzz corpus replays its seeds under asan and ubsan before mutating. ci runs it on linux x86_64 under gcc and clang, on linux i386 and on macos arm64.</p>
+<pre class="blk" data-lang="sh"><code>make split                      <span class="c"># libkoinu-sign.a and libkoinu-chain.a</span>
 make install PREFIX=/usr/local  <span class="c"># archives, headers, pkg-config, kw kwd kwui</span></code></pre>
 
     <h2>a wallet</h2>
-<pre><code>kw new     --keystore w.ks               <span class="c"># generate, seal, show the mnemonic</span>
+<pre class="blk" data-lang="sh"><code>kw new     --keystore w.ks               <span class="c"># generate, seal, show the mnemonic</span>
 kw restore --keystore w.ks --mnemonic -  <span class="c"># seal an existing mnemonic</span>
 kw address --keystore w.ks               <span class="c"># derive m/44'/3'/0'/0/index</span>
 kw export xpub --keystore w.ks           <span class="c"># the account public key</span></code></pre>
@@ -193,32 +564,38 @@ kw export xpub --keystore w.ks           <span class="c"># the account public ke
 
   <!-- ───────────────────────── use: backup ───────────────────────── -->
   <section data-route="/backup" hidden>
-    <p class="kicker">use / backup</p>
-    <h1>backup</h1>
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> backup</p>
+      <h1>backup</h1>
+      <p class="deck">checking a backup without restoring it, and splitting a seed so that fewer than a threshold is nothing.</p>
+    </div>
     <p>a backup you have never checked is a guess, and checking one used to mean restoring it somewhere, which is how checking a backup becomes the thing that loses it. <code>kw backup verify</code> derives the seed the typed words give, opens the keystore, and compares the two in constant time, printing neither. a mismatch exits 3.</p>
-<pre><code>kw backup verify --keystore w.ks --mnemonic @phrase.txt
+<pre class="blk" data-lang="sh"><code>kw backup verify --keystore w.ks --mnemonic @phrase.txt
 kw backup verify --mnemonic @phrase.txt   <span class="c"># no wallet: fingerprint and first address</span></code></pre>
 
     <h2>shares</h2>
-<pre><code>kw backup split   --keystore w.ks --groups 2of3
+<pre class="blk" data-lang="sh"><code>kw backup split   --keystore w.ks --groups 2of3
 kw backup split   --keystore w.ks --groups 1of1,2of3 --group-threshold 1
 kw backup combine --keystore new.ks --shares @shares.txt</code></pre>
     <p>split prints the seed as slip-39 shares to stdout. <code>2of3</code> is three shares needing two. groups nest a second threshold over the first: <code>1of1,2of3</code> with group threshold 1 is "your own share, or two of the family's", and with 2 it is "your share and two of the family's". combine seals a keystore from exactly a threshold, refusing a spare share, and never prints the seed; to check a set, point it at a scratch path and compare the fingerprint.</p>
     <p>a 64-byte seed makes 59-word shares, which other slip-39 software combines and trezor firmware will not accept. <code>--backup-passphrase</code> is a third secret, and a wrong one yields a different wallet rather than an error.</p>
-<pre><code>kw backup split --keystore w.ks --format codex32 --groups 3of5 --id kw00</code></pre>
+<pre class="blk" data-lang="sh"><code>kw backup split --keystore w.ks --format codex32 --groups 3of5 --id kw00</code></pre>
     <p>codex32 writes the same split as bip-93 strings, checkable with a pen and a printed table. one flat threshold of 2 to 9, up to 22 shares, no passphrase, no grouping. why the two formats trade off as they do is the <a href="#/learn/shares">shares</a> chapter.</p>
     <div class="pager"><a href="#/start"><span>previous</span>start</a><a class="r" href="#/spend"><span>next</span>spend</a></div>
   </section>
 
   <!-- ───────────────────────── use: spend ───────────────────────── -->
   <section data-route="/spend" hidden>
-    <p class="kicker">use / spend</p>
-    <h1>spend</h1>
-<pre><code>kw scan --keystore w.ks --node NODE --headers h --filters f
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> spend</p>
+      <h1>spend</h1>
+      <p class="deck">scan, sign, send. the three ways a broadcast ends, and why an air-gapped spend is two commands.</p>
+    </div>
+<pre class="blk" data-lang="sh"><code>kw scan --keystore w.ks --node NODE --headers h --filters f
 kw sign --keystore w.ks --to DEST:100
 kw send --tx @tx.hex --node NODE          <span class="c"># decodes it and asks first</span></code></pre>
     <p>scan watches the first <code>--gap</code> receive and change addresses, extends the range until enough unused ones trail the highest used, and writes the utxo set beside the keystore. it forgets the seed and master key before it connects. sign selects inputs and builds the transaction; send broadcasts it. <code>sign --raw</code> puts the transaction alone on stdout and the decoded outputs and fee on stderr, so it pipes without losing the readback:</p>
-<pre><code>kw sign --keystore w.ks --to DEST:100 --raw | kw send --tx - --node NODE --yes</code></pre>
+<pre class="blk" data-lang="sh"><code>kw sign --keystore w.ks --to DEST:100 --raw | kw send --tx - --node NODE --yes</code></pre>
 
     <h2>what send's exit code means</h2>
     <p>a node acknowledges nothing it accepts, so send asks for the mempool afterwards and looks for the transaction.</p>
@@ -230,48 +607,48 @@ kw send --tx @tx.hex --node NODE          <span class="c"># decodes it and asks 
     <p>the fee defaults to the peer's advertised relay floor captured during scan; <code>--feerate</code> sets a rate and <code>--fee</code> an exact amount. change below the dust limit goes to the fee. change goes to the first address the utxo set and the journal agree is unused, and signing records it, so consecutive spends do not share one.</p>
 
     <h2>air-gapped</h2>
-<pre><code>kw psbt build   --xpub XPUB --utxos u --to DEST:100   <span class="c"># online, cannot sign</span>
+<pre class="blk" data-lang="sh"><code>kw psbt build   --xpub XPUB --utxos u --to DEST:100   <span class="c"># online, cannot sign</span>
 kw psbt sign    --psbt @psbt.hex --keystore w.ks      <span class="c"># offline, opens no socket</span>
 kw psbt extract --psbt @signed.hex | kw send --tx - --node NODE --yes</code></pre>
     <p>the signer takes each input's amount and script from a previous transaction carried in the psbt, after requiring those bytes to hash to the outpoint being spent. why that matters for a legacy chain is in <a href="#/learn/transactions">transactions</a>.</p>
 
     <h2>sweep</h2>
-<pre><code>kw sweep --watch ADDR --utxos u --node NODE --spv   <span class="c"># finds the coins, reads no key</span>
+<pre class="blk" data-lang="sh"><code>kw sweep --watch ADDR --utxos u --node NODE --spv   <span class="c"># finds the coins, reads no key</span>
 kw sweep --wif @k --to DEST --utxos u               <span class="c"># signs, opens no socket</span>
 kw send  --tx @tx.hex --node NODE</code></pre>
     <p>two runs so the one holding the key never opens a socket. passing both halves at once is refused, and the signing step drops any output not locked to the key it holds.</p>
 
     <h2>multisig</h2>
-<pre><code>kw cosign --tx HEX --redeem HEX --wif @k           <span class="c"># one signature for the counterparty</span>
+<pre class="blk" data-lang="sh"><code>kw cosign --tx HEX --redeem HEX --wif @k           <span class="c"># one signature for the counterparty</span>
 kw cosign --tx HEX --redeem HEX --wif @k --finish  <span class="c"># assemble, checking every signature</span>
 kw psbt create | tx | sign | combine | sigs | finalize | extract</code></pre>
     <p>cosign --finish verifies each collected signature against the sighash and refuses the set if one fails. psbt finalize writes the scriptSig it is given, because scripts like a payment channel's OP_IF branch do not classify for a standard finalizer; it cannot verify that, so the caller does. combine refuses a conflict rather than picking a side, and a psbt carrying segwit or unknown fields is refused rather than parsed with those fields dropped.</p>
-    <div class="pager"><a href="#/backup"><span>previous</span>backup</a><a class="r" href="#/kwd"><span>next</span>kwd</a></div>
+    <div class="pager"><a href="#/backup"><span>previous</span>backup</a><a class="r" href="#/tools"><span>next</span>tools</a></div>
   </section>
 
-  <!-- ───────────────────────── use: kwd ───────────────────────── -->
-  <section data-route="/kwd" hidden>
-    <p class="kicker">use / kwd</p>
-    <h1>kwd</h1>
+  <!-- ────── use: tools ────── -->
+  <section data-route="/tools" hidden>
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> tools</p>
+      <h1>kwd and kwui</h1>
+      <p class="deck">a daemon that holds the chain open, and a terminal view that never connects.</p>
+    </div>
+
+    <h2>kwd, the chain held open</h2>
     <p>kw loads the header cache on every invocation, about 1.3 s and growing with the height. kwd pays that once, holds the chain and its peers open, and answers outpoint queries over a unix socket: confirmed or not, to what depth, spent or not. it holds no keys and opens no keystore, so a compromised kwd can lie about a confirmation and cannot sign.</p>
-<pre><code>kwd --node NODE --headers h --filters f --socket /run/kwd.sock
+<pre class="blk" data-lang="sh"><code>kwd --node NODE --headers h --filters f --socket /run/kwd.sock
 kw outpoint --daemon /run/kwd.sock --watch ADDR --outpoint TXID:VOUT --since H</code></pre>
     <p>measured against mainnet at height 6380305 with a filter cache from a node serving bip158:</p>
-<pre><code>8 to 25 ms      repeated query
+<pre class="blk" data-lang="fig" data-cap="mainnet at height 6380305, against a node serving bip158"><code>8 to 25 ms      repeated query
 287 ms          80000 block range
 2884 ms         first request after startup (pays the delta sync)
 1572 ms         46 blocks with no filters, fetching every block</code></pre>
     <p>the first number sizes a budget and the last sizes a range. where the peer serves no filters, which is every stock 1.14 node, kwd says so and answers from blocks, so a request costs every block from its since height to the tip. a request with no since height is refused rather than read as zero. a coinbase output under maturity reports "unspent but immature" and exits 5.</p>
     <p>the socket is created 0600 with no group and no mode option. whatever asks has to run as kwd's user; another account gets permission denied on a path that otherwise looks right.</p>
-    <div class="pager"><a href="#/spend"><span>previous</span>spend</a><a class="r" href="#/kwui"><span>next</span>kwui</a></div>
-  </section>
 
-  <!-- ───────────────────────── use: kwui ───────────────────────── -->
-  <section data-route="/kwui" hidden>
-    <p class="kicker">use / kwui</p>
-    <h1>kwui</h1>
+    <h2>kwui, a view with no socket</h2>
     <p>a terminal view of a wallet: the balance, and every derived address with what it holds. it reads the keystore and the utxo set <code>kw scan</code> wrote and never connects to a peer, so the process holding keys is not the process talking to them.</p>
-<pre><code>kwui --keystore w.ks</code></pre>
+<pre class="blk" data-lang="sh"><code>kwui --keystore w.ks</code></pre>
     <dl>
       <dt>j / k</dt><dd>move</dd>
       <dt>u</dt><dd>hide addresses nothing has paid</dd>
@@ -279,56 +656,77 @@ kw outpoint --daemon /run/kwd.sock --watch ADDR --outpoint TXID:VOUT --since H</
       <dt>q</dt><dd>quit</dd>
     </dl>
     <p>a spend asks for a destination and amount, shows the fee and change before anything is signed, asks for the passphrase again as the last confirmation, and writes the signed transaction out for <code>kw send</code>.</p>
-    <div class="pager"><a href="#/kwd"><span>previous</span>kwd</a><a class="r" href="#/library"><span>next</span>library</a></div>
+    <div class="pager"><a href="#/spend"><span>previous</span>spend</a><a class="r" href="#/library"><span>next</span>library</a></div>
   </section>
 
-  <!-- ───────────────────────── use: library ───────────────────────── -->
+  <!-- ────── use: library ───────────────────────── -->
   <section data-route="/library" hidden>
-    <p class="kicker">use / library</p>
-    <h1>library</h1>
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> library</p>
+      <h1>library</h1>
+      <p class="deck">two archives, one direction of dependency, and no abi promise.</p>
+    </div>
     <dl>
       <dt>libkoinu-sign.a</dt><dd>keys, derivations, share formats, keystore, transaction builder, psbt, utxo tracking. references no function that can open a connection.</dd>
       <dt>libkoinu-chain.a</dt><dd>peers, headers, auxpow, difficulty, filters. depends on the signing half, never the reverse.</dd>
     </dl>
-<pre><code>#include &lt;koinu/koinu-sign.h&gt;
+<pre class="blk" data-lang="sh"><code>#include &lt;koinu/koinu-sign.h&gt;
 cc prog.c $(pkg-config --cflags --libs koinu-sign) -lsecp256k1</code></pre>
     <p>secp256k1 is yours to provide. the tree builds its own from a pinned submodule and does not install it, since a second libsecp256k1 on a system is how a program links two of them with no warning.</p>
     <p>there is no shared library and no abi promise. the header types are transparent structs that still change (<code>kw_utxo</code> grew two fields when amounts were bound to their transactions), so pin a commit and build from source. neither archive exports a name outside <code>kw_</code> and <code>KW_</code>; the vendored argon2 and poly1305-donna arrive with <code>initialize</code>, <code>finalize</code> and 53 others, which <code>crypto/vendor/kw_symbols.h</code> renames at compile time rather than patching the vendored sources. the library prints nothing unless the caller installs a log sink.</p>
     <p>how the split is enforced is the <a href="#/learn/boundary">boundary</a> chapter.</p>
-    <div class="pager"><a href="#/kwui"><span>previous</span>kwui</a><a class="r" href="#/verify"><span>next</span>verify</a></div>
+    <div class="pager"><a href="#/tools"><span>previous</span>tools</a><a class="r" href="#/verify"><span>next</span>verify</a></div>
   </section>
 
   <!-- ───────────────────────── use: verify ───────────────────────── -->
   <section data-route="/verify" hidden>
-    <p class="kicker">use / verify</p>
-    <h1>verify a release</h1>
+    <div class="head">
+      <p class="kicker"><b>use</b> <i>/</i> verify</p>
+      <h1>verify a release</h1>
+      <p class="deck">the pgp key release tags are signed with.</p>
+    </div>
     <p>release tags are signed with this pgp key:</p>
-<pre><code>00D7 BCFF 5778 2D5D 91D6  281A 0DC6 4171 D69D 92F4</code></pre>
-<pre><code>gpg --recv-keys 00D7BCFF57782D5D91D6281A0DC64171D69D92F4
-git tag -v v0.3.0</code></pre>
+<pre class="blk" data-lang="fig" data-cap="compare this against the fingerprint on your screen"><code>00D7 BCFF 5778 2D5D 91D6  281A 0DC6 4171 D69D 92F4</code></pre>
+<pre class="blk" data-lang="sh"><code>gpg --recv-keys 00D7BCFF57782D5D91D6281A0DC64171D69D92F4
+git tag -v v<span data-ver="%s">0.4.0</span></code></pre>
     <p>if the fingerprint on your screen does not match the one above, stop. the key is also in the tree at <a href="https://github.com/xanimo/koinu/blob/main/docs/bluezr.asc">docs/bluezr.asc</a>, which only helps if you already trust the tree. report vulnerabilities through <a href="https://github.com/xanimo/koinu/blob/main/SECURITY.md">SECURITY.md</a>.</p>
     <div class="pager"><a href="#/library"><span>previous</span>library</a><a class="r" href="#/learn"><span>next</span>learn</a></div>
   </section>
 
   <!-- ───────────────────────── learn: contents ───────────────────────── -->
   <section data-route="/learn" hidden>
-    <p class="kicker">learn</p>
-    <h1>how a wallet works, read through koinu</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> contents</p>
+      <h1>how a wallet works, read through koinu</h1>
+      <p class="deck">eleven chapters, from 256 random bits to choosing between three peers' chains.</p>
+    </div>
     <p>a wallet is three jobs that are easy to blur together: keep a secret, sign with it, and find out what the chain says about the addresses it controls. the first two never need a network and the third never needs a key. most of what is careful in koinu follows from refusing to let those jobs share a process.</p>
-    <p>each chapter explains one step, quotes the code that does it, and links the file. the code is c, but the excerpts are short and the ideas carry to any language. read in order or jump in.</p>
-    <ol class="plain toc">
-      <li><span><a href="#/learn/keys">keys</a> <span>&middot; entropy to words to seed to an address beginning with D</span></span></li>
-      <li><span><a href="#/learn/keystore">keystore</a> <span>&middot; sealing a seed with a passphrase, 52 bytes of header at a time</span></span></li>
-      <li><span><a href="#/learn/memory">memory</a> <span>&middot; zeroing that the compiler cannot remove, mlock that counts, no core files</span></span></li>
-      <li><span><a href="#/learn/transactions">transactions</a> <span>&middot; what a legacy signature commits to, and the amount it does not</span></span></li>
-      <li><span><a href="#/learn/shares">shares</a> <span>&middot; splitting a seed so that fewer than a threshold is nothing at all</span></span></li>
-      <li><span><a href="#/learn/headers">headers</a> <span>&middot; scrypt, nBits, work, and dogecoin's off-by-one retarget</span></span></li>
-      <li><span><a href="#/learn/auxpow">auxpow</a> <span>&middot; checking work borrowed from another chain</span></span></li>
-      <li><span><a href="#/learn/filters">filters</a> <span>&middot; finding your coins without telling a peer which they are</span></span></li>
-      <li><span><a href="#/learn/peers">peers</a> <span>&middot; choosing a chain when you cannot trust who serves it</span></span></li>
-      <li><span><a href="#/learn/boundary">boundary</a> <span>&middot; a build that fails if signing code can open a socket</span></span></li>
-      <li><span><a href="#/learn/threats">threats</a> <span>&middot; what all of that defends, and what it does not</span></span></li>
-    </ol>
+    <p>each chapter explains one step, quotes the code that does it, and links the file it lives in. the code is c, but the excerpts are short and the ideas carry to any language. read in order or jump in.</p>
+    <div class="toc">
+      <p class="part"><em>part one</em> the secret</p>
+      <ol class="plain">
+        <li><a href="#/learn/keys">keys</a><span>entropy to words to seed to an address beginning with D</span></li>
+        <li><a href="#/learn/keystore">keystore</a><span>sealing a seed with a passphrase, 52 bytes of header at a time</span></li>
+        <li><a href="#/learn/memory">memory</a><span>zeroing that the compiler cannot remove, mlock that counts, no core files</span></li>
+      </ol>
+      <p class="part"><em>part two</em> signing and backup</p>
+      <ol class="plain" style="counter-reset:n 3">
+        <li><a href="#/learn/transactions">transactions</a><span>what a legacy signature commits to, and the amount it does not</span></li>
+        <li><a href="#/learn/shares">shares</a><span>splitting a seed so that fewer than a threshold is nothing at all</span></li>
+      </ol>
+      <p class="part"><em>part three</em> the chain</p>
+      <ol class="plain" style="counter-reset:n 5">
+        <li><a href="#/learn/headers">headers</a><span>scrypt, nBits, work, and dogecoin's off-by-one retarget</span></li>
+        <li><a href="#/learn/auxpow">auxpow</a><span>checking work borrowed from another chain</span></li>
+        <li><a href="#/learn/filters">filters</a><span>finding your coins without telling a peer which they are</span></li>
+        <li><a href="#/learn/peers">peers</a><span>choosing a chain when you cannot trust who serves it</span></li>
+      </ol>
+      <p class="part"><em>part four</em> the shape of it</p>
+      <ol class="plain" style="counter-reset:n 9">
+        <li><a href="#/learn/boundary">boundary</a><span>a build that fails if signing code can open a socket</span></li>
+        <li><a href="#/learn/threats">threats</a><span>what all of that defends, and what it does not</span></li>
+      </ol>
+    </div>
     <p>chapters 1, 2, 4, 5, 6, 7 and 8 have panels that run koinu's own c in the page: the same files kw links, compiled to webassembly by <a href="https://github.com/xanimo/koinu.dog/blob/main/build.sh">build.sh</a> with a small shim, <a href="https://github.com/xanimo/koinu.dog/blob/main/kw_web.c">kw_web.c</a>, that turns strings into calls and results into json. two things differ from the native build, and the shim says so in its first comment: randomness comes from the browser's <code>crypto.getRandomValues</code>, and nothing is mlock'd, because wasm memory has no pages to pin. it is a teaching build, not a wallet.</p>
     <p class="dim">the full threat model is <a href="https://github.com/xanimo/koinu/blob/main/docs/threat-model.md">docs/threat-model.md</a> and every vendored primitive's origin is in <a href="https://github.com/xanimo/koinu/blob/main/docs/PROVENANCE.md">docs/PROVENANCE.md</a>. both are worth reading whole.</p>
     <div class="pager"><a class="r" href="#/learn/keys"><span>start</span>1. keys</a></div>
@@ -336,8 +734,11 @@ git tag -v v0.3.0</code></pre>
 
   <!-- ───────────────────────── learn: keys ───────────────────────── -->
   <section data-route="/learn/keys" hidden>
-    <p class="kicker">learn / 1</p>
-    <h1>keys</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 1</p>
+      <h1>keys</h1>
+      <p class="deck">entropy to words to seed to an address beginning with D</p>
+    </div>
     <p>everything a wallet controls comes from one random number. the steps from there to an address are each a published standard, and each is a small file in <code>crypto/</code>.</p>
 
     <h2>entropy</h2>
@@ -347,7 +748,7 @@ git tag -v v0.3.0</code></pre>
     <h2>words (bip39)</h2>
     <p>append a checksum (the first bits of the entropy's sha-256, one per 32 bits of entropy) and cut the result into 11-bit pieces. each piece indexes a 2048-word list, so 128 bits make 12 words and 256 make 24. the words are an encoding of the entropy, with a checksum so a mistyped word is caught.</p>
     <p>the seed is not the entropy. it is pbkdf2-hmac-sha512 with the words as the password, the string <code>"mnemonic"</code> plus an optional passphrase as the salt, and 2048 rounds:</p>
-<pre><code>memcpy(salt, "mnemonic", 8);
+<pre class="blk" data-lang="c" data-src="crypto/bip39.c"><code>memcpy(salt, "mnemonic", 8);
 memcpy(salt + 8, passphrase, plen);
 
 int ok = kw_pbkdf2_hmac_sha512((const uint8_t *)norm, mlen,
@@ -357,12 +758,12 @@ int ok = kw_pbkdf2_hmac_sha512((const uint8_t *)norm, mlen,
 
     <h2>a tree of keys (bip32)</h2>
     <p>the master key is hmac-sha512 keyed with the string <code>"Bitcoin seed"</code> over the 64-byte seed. the left 32 bytes are the private key and the right 32 are the chain code, extra entropy that every child derivation mixes in.</p>
-<pre><code>kw_hmac_sha512((const uint8_t *)"Bitcoin seed", 12, seed, seedlen, I);</code></pre>
+<pre class="blk" data-lang="c" data-src="crypto/bip32.c"><code>kw_hmac_sha512((const uint8_t *)"Bitcoin seed", 12, seed, seedlen, I);</code></pre>
     <p>a child is hmac-sha512 under the parent's chain code, whose left half is added to the parent key mod the curve order. a hardened child (index at or above 2<sup>31</sup>, written with a <code>'</code>) hashes the parent's private key; a normal child hashes the parent's public key, which is why an extended public key can walk normal children and never hardened ones.</p>
     <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/bip32.c">crypto/bip32.c</a> &middot; <a href="https://github.com/xanimo/koinu/blob/main/crypto/ec.c">crypto/ec.c</a></p>
 
     <h2>a path (bip44)</h2>
-<pre><code>m / 44' / 3' / 0' / change / index
+<pre class="blk" data-lang="fig" data-cap="m / 44' / 3' / 0' / change / index"><code>m / 44' / 3' / 0' / change / index
      |     |    |     |        └ the nth address
      |     |    |     └ 0 for receive, 1 for change
      |     |    └ account
@@ -388,10 +789,13 @@ int ok = kw_pbkdf2_hmac_sha512((const uint8_t *)norm, mlen,
 
   <!-- ───────────────────────── learn: keystore ───────────────────────── -->
   <section data-route="/learn/keystore" hidden>
-    <p class="kicker">learn / 2</p>
-    <h1>keystore</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 2</p>
+      <h1>keystore</h1>
+      <p class="deck">sealing a seed with a passphrase, 52 bytes of header at a time</p>
+    </div>
     <p>the seed has to live on disk between runs. the keystore stretches a passphrase into a key with argon2id and encrypts the 64-byte seed under chacha20-poly1305. it stores the seed, not the words, and the words cannot be derived back from it.</p>
-<pre><code>offset  size  field
+<pre class="blk" data-lang="fig" data-cap="the keystore file: 52 authenticated bytes, then ciphertext and tag"><code>offset  size  field
      0     4  magic "DWKS"
      4     4  version, kdf id, aead id, reserved
      8    12  argon2 t_cost, m_cost_kib, parallelism
@@ -404,14 +808,14 @@ int ok = kw_pbkdf2_hmac_sha512((const uint8_t *)norm, mlen,
     <p>the default cost is three passes over 64 MiB. argon2id is memory-hard, so guessing passphrases on a gpu costs memory per guess rather than only arithmetic.</p>
 
     <h2>the header is the associated data</h2>
-<pre><code><span class="c">/* header is the AAD, so version and kdf params are tamper-evident */</span>
+<pre class="blk" data-lang="c" data-src="crypto/keystore.c"><code><span class="c">/* header is the AAD, so version and kdf params are tamper-evident */</span>
 kw_chacha20poly1305_encrypt(key, nonce, out, KS_HDR,
                             secret, secretlen,
                             out + KS_HDR, out + KS_HDR + secretlen);</code></pre>
     <p>an aead authenticates bytes it does not encrypt. passing the header as that data means someone who edits the file to lower the argon2 cost, or swap the salt, gets a tag that no longer verifies. without it, an attacker with write access could downgrade the kdf and wait for you to re-seal.</p>
 
     <h2>check before the expensive part</h2>
-<pre><code><span class="c">/* before the KDF runs, since the tag is only checkable after it */</span>
+<pre class="blk" data-lang="c" data-src="crypto/keystore.c"><code><span class="c">/* before the KDF runs, since the tag is only checkable after it */</span>
 if (t > KW_KEYSTORE_MAX_T_COST || m > KW_KEYSTORE_MAX_M_COST_KIB ||
     p > KW_KEYSTORE_MAX_PARALLELISM) return 0;</code></pre>
     <p>there is an ordering problem in the design above: the header's integrity can only be checked after the key is derived, and deriving the key runs whatever cost the header asks for. a crafted file asking for a terabyte would be honoured before the tag could refuse it. so the parameters are bounded first, and the length field has to match the file size exactly. a wrong passphrase and a tampered file both end the same way, a failed tag and nothing decrypted.</p>
@@ -431,12 +835,15 @@ if (t > KW_KEYSTORE_MAX_T_COST || m > KW_KEYSTORE_MAX_M_COST_KIB ||
 
   <!-- ───────────────────────── learn: memory ───────────────────────── -->
   <section data-route="/learn/memory" hidden>
-    <p class="kicker">learn / 3</p>
-    <h1>memory</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 3</p>
+      <h1>memory</h1>
+      <p class="deck">zeroing that the compiler cannot remove, mlock that counts, no core files</p>
+    </div>
     <p>a decrypted seed is a run of bytes in ram. the job is to keep it out of every place ram leaks to: freed memory reused by something else, swap, core files, other processes. each defence is a few lines, and each has a way to be quietly wrong.</p>
 
     <h2>zeroing the compiler cannot remove</h2>
-<pre><code>void kw_secure_zero(void *p, size_t n)
+<pre class="blk" data-lang="c" data-src="crypto/mem.c"><code>void kw_secure_zero(void *p, size_t n)
 {
     volatile unsigned char *v = (volatile unsigned char *)p;
     while (n--) *v++ = 0;
@@ -444,20 +851,20 @@ if (t > KW_KEYSTORE_MAX_T_COST || m > KW_KEYSTORE_MAX_M_COST_KIB ||
     <p>a <code>memset</code> on a buffer that is never read again is a dead store, and optimisers delete dead stores. writing through a volatile pointer tells the compiler each write is observable, so it stays.</p>
 
     <h2>comparing without a timing leak</h2>
-<pre><code>for (size_t i = 0; i &lt; n; i++) d |= (unsigned char)(x[i] ^ y[i]);
+<pre class="blk" data-lang="c" data-src="crypto/mem.c"><code>for (size_t i = 0; i &lt; n; i++) d |= (unsigned char)(x[i] ^ y[i]);
 return d;   <span class="c">/* 0 == equal */</span></code></pre>
     <p><code>memcmp</code> returns at the first difference, so how long it takes says how many leading bytes matched. this loop always touches every byte. <code>kw backup verify</code> uses it to compare the seed your words give against the keystore's.</p>
 
     <h2>mlock, counted</h2>
     <p><code>mlock</code> pins pages so they never reach swap, but it works on whole pages and does not count. lock two secrets on one page, unlock the first, and the second is pageable while still in use. that happened: the keystore's derived key sits a stack frame below the caller's seed, and forgetting the key unlocked the seed.</p>
-<pre><code>if (--lock_tab[i].refs == 0 &amp;&amp; !lock_overflow) kw_munlock((void *)pg, ps);</code></pre>
+<pre class="blk" data-lang="c" data-src="crypto/mem.c"><code>if (--lock_tab[i].refs == 0 &amp;&amp; !lock_overflow) kw_munlock((void *)pg, ps);</code></pre>
     <p>so koinu keeps a reference count per page and unlocks on the last forget. if the table overflows it stops unlocking altogether, since an untracked page could otherwise be released under a secret it does not know about. what gets locked is the seed, every bip32 key on the derivation path including the intermediates, the hmac output a child key is cut from, the keystore key, a decoded wif, and the buffer a passphrase is read into.</p>
 
     <h2>what is not locked, said plainly</h2>
     <p>argon2id allocates its own working memory, up to the 1 GiB a keystore header may ask for, and bip39 builds <code>"mnemonic"</code> plus the passphrase on the heap for the length of 2048 pbkdf2 rounds. both are wiped before they are freed, but locking a gibibyte would fail under the usual <code>RLIMIT_MEMLOCK</code>. on a machine with swap under memory pressure, key derivation is the window where passphrase-derived bytes can reach disk. the threat model states this rather than claiming otherwise.</p>
 
     <h2>core files and stdio</h2>
-<pre><code>setrlimit(RLIMIT_CORE, &amp;rl);              <span class="c">/* zero */</span>
+<pre class="blk" data-lang="c" data-src="crypto/mem.c"><code>setrlimit(RLIMIT_CORE, &amp;rl);              <span class="c">/* zero */</span>
 prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);     <span class="c">/* and no ptrace from a same-uid process */</span></code></pre>
     <p>mlock keeps a page out of swap and says nothing about a core dump. a SIGQUIT at the passphrase prompt once put a mnemonic the user had not seen yet into a core file, and systemd-coredump keeps what it is given. kw, kwd and kwui set both of these before reading any secret. the mnemonic is written with <code>write(2)</code> rather than <code>printf</code> too, because stdio's buffer is malloc'd once, never wiped, and outlives every forget in the process.</p>
     <p class="src">source: <a href="https://github.com/xanimo/koinu/blob/main/crypto/mem.c">crypto/mem.c</a></p>
@@ -466,15 +873,18 @@ prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);     <span class="c">/* and no ptrace from a 
 
   <!-- ───────────────────────── learn: transactions ───────────────────────── -->
   <section data-route="/learn/transactions" hidden>
-    <p class="kicker">learn / 4</p>
-    <h1>transactions</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 4</p>
+      <h1>transactions</h1>
+      <p class="deck">what a legacy signature commits to, and the amount it does not</p>
+    </div>
     <p>a transaction lists inputs, each naming a previous output by txid and index, and outputs, each an amount and a locking script. a p2pkh locking script says "show a public key hashing to this, and a signature by it":</p>
-<pre><code>OP_DUP OP_HASH160 &lt;20-byte hash160&gt; OP_EQUALVERIFY OP_CHECKSIG
+<pre class="blk" data-lang="fig" data-cap="a p2pkh locking script: opcodes above, the bytes they encode below"><code>OP_DUP OP_HASH160 &lt;20-byte hash160&gt; OP_EQUALVERIFY OP_CHECKSIG
 76     a9         14 ...             88             ac</code></pre>
 
     <h2>what gets signed</h2>
     <p>a signature cannot cover its own scriptSig, so legacy signing serializes a modified copy: every input's scriptSig empty except the one being signed, which carries the previous output's script instead. append the hash type as four bytes and double sha-256 the lot.</p>
-<pre><code>} else if ((size_t)sig_index == i) {
+<pre class="blk" data-lang="c" data-src="crypto/tx.c"><code>} else if ((size_t)sig_index == i) {
     w_varint(&amp;w, sublen);           <span class="c">/* the input being signed: its scriptCode */</span>
     w_bytes(&amp;w, subscript, sublen);
 } else {
@@ -489,7 +899,7 @@ kw_hash256(buf, n, out);</code></pre>
     <h2>the amount that is not signed</h2>
     <p>look at what that preimage contains: the outpoints being spent and the scripts they carry. it does not contain what those outpoints are worth. legacy sighash commits to the inputs, not their values, so a signer has to be told each amount, and the fee is whatever the inputs hold minus the outputs.</p>
     <p>the consequence is concrete. editing one value column in a utxo file turned a 1000 doge spend into a 998 doge fee that the wallet reported as 0.000192. <code>kw send</code> could not catch it either, since the fee is not in the transaction to be read back, and a fee bound cannot help because it bounds the fee the signer believes it is paying.</p>
-<pre><code><span class="c">/* everything said about the transaction is checked against bytes that
+<pre class="blk" data-lang="c" data-src="wallet/utxo.c"><code><span class="c">/* everything said about the transaction is checked against bytes that
    produce this txid */</span>
 kw_hash256(rawtx, rawlen, got);
 if (memcmp(got, txid, 32) != 0) return 0;</code></pre>
@@ -507,7 +917,7 @@ if (memcmp(got, txid, 32) != 0) return 0;</code></pre>
 
     <h2>a lesson from OP_CODESEPARATOR</h2>
     <p>consensus hashes the scriptCode from just past the last OP_CODESEPARATOR executed before the checksig, then removes any that remain. sign the script verbatim and you get a signature that verifies locally against the same wrong hash and fails on chain. two bugs were fixed here: dropping every <code>0xab</code> byte, including one inside a pushed hash160 (one address in thirteen has that byte), and starting from the last separator anywhere rather than the last before the checksig.</p>
-<pre><code><span class="c">/* OP_CODESEPARATOR is an opcode, and 0xab inside a push is data */</span>
+<pre class="blk" data-lang="c" data-src="crypto/tx.c"><code><span class="c">/* OP_CODESEPARATOR is an opcode, and 0xab inside a push is data */</span>
 if (datalen) { memcpy(out + k, in + i, hdr + datalen); ... continue; }
 if (op != 0xab) out[k++] = op;</code></pre>
     <p>which separator executes depends on the run, so where a branch could skip one, or one sits between two checksigs, the bytes do not say what to sign. koinu refuses those rather than guessing. the general point: a signer must hash exactly what a node will, and a test that verifies against your own hash function proves nothing about that.</p>
@@ -519,8 +929,11 @@ if (op != 0xab) out[k++] = op;</code></pre>
 
   <!-- ───────────────────────── learn: shares ───────────────────────── -->
   <section data-route="/learn/shares" hidden>
-    <p class="kicker">learn / 5</p>
-    <h1>shares</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 5</p>
+      <h1>shares</h1>
+      <p class="deck">splitting a seed so that fewer than a threshold is nothing at all</p>
+    </div>
     <p>one written phrase conflates two numbers: one copy is lost to one fire, and one copy is stolen from one drawer. make two copies and you halve the first risk by doubling the second. threshold sharing separates them.</p>
 
     <h2>shamir, in one paragraph</h2>
@@ -556,10 +969,13 @@ if (op != 0xab) out[k++] = op;</code></pre>
 
   <!-- ───────────────────────── learn: headers ───────────────────────── -->
   <section data-route="/learn/headers" hidden>
-    <p class="kicker">learn / 6</p>
-    <h1>headers</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 6</p>
+      <h1>headers</h1>
+      <p class="deck">scrypt, nBits, work, and dogecoin's off-by-one retarget</p>
+    </div>
     <p>a light wallet does not download the chain. it downloads the 80-byte headers, checks the work in each, and later asks for the few blocks it cares about, checking each against the header that commits to it.</p>
-<pre><code>offset  size  field
+<pre class="blk" data-lang="fig" data-cap="an 80-byte block header"><code>offset  size  field
      0     4  version
      4    32  previous block hash
     36    32  merkle root of the block's transactions
@@ -579,13 +995,13 @@ if (op != 0xab) out[k++] = op;</code></pre>
 
     <h2>nBits</h2>
     <p>the 256-bit target is stored as an exponent byte and a 24-bit mantissa: target = mantissa &times; 256<sup>exponent&minus;3</sup>. the top mantissa bit means negative, which a target never is. decoding has a trap the comment spells out: bounding the exponent is not enough, because <code>0x22001234</code> has a small exponent for its mantissa and still runs past bit 256.</p>
-<pre><code>unsigned shift = 8 * (expo - 3), mbits = 0;
+<pre class="blk" data-lang="c" data-src="net/pow.c"><code>unsigned shift = 8 * (expo - 3), mbits = 0;
 for (uint32_t m = mant; m; m >>= 1) mbits++;
 if (shift + mbits > 256) return 0;</code></pre>
 
     <h2>work</h2>
     <p>a header's work is the expected number of hashes to meet its target, 2<sup>256</sup> / (target + 1). the chain with the most total work wins, not the longest. 2<sup>256</sup> does not fit in 256 bits, so the code uses an identity:</p>
-<pre><code><span class="c">/* 2^256/(t+1) without a 257th bit: (~t)/(t+1) + 1,
+<pre class="blk" data-lang="c" data-src="net/pow.c"><code><span class="c">/* 2^256/(t+1) without a 257th bit: (~t)/(t+1) + 1,
    since 2^256 = (~t) + (t+1) */</span>
 for (int i = 0; i &lt; 8; i++) num.w[i] = ~target.w[i];
 divide(&amp;num, &amp;denom, out);
@@ -602,11 +1018,11 @@ kw_u256_add(out, &amp;one);</code></pre>
 
     <h2>the retarget, and its off-by-one</h2>
     <p>a header's target is not its own claim. it must equal what the retarget rule derives from the headers before it. dogecoin retargeted every 240 blocks (four hours at a minute a block) until digishield at 145000, and every block after, with an amplitude filter that moves only an eighth of the way toward the measured time and clamps the result:</p>
-<pre><code>actual = span + (actual - span) / 8;   <span class="c">/* the amplitude filter */</span>
+<pre class="blk" data-lang="c" data-src="net/pow.c"><code>actual = span + (actual - span) / 8;   <span class="c">/* the amplitude filter */</span>
 lo = span - span / 4;
 hi = span + span / 2;</code></pre>
     <p>the switch has a subtlety worth reading the code for. whether a height retargets uses the previous block's height, so 145000 still belongs to a 240-block period, and since 145000 mod 240 is 40 it retargets nothing. the damping and timespan use the height being validated. so 145001 is the first block that actually recomputes every block. get that wrong by one and the header chain stops at 145000.</p>
-<pre><code>static int per_block(const kw_pow_rules *r, uint32_t height)
+<pre class="blk" data-lang="c" data-src="net/pow.c"><code>static int per_block(const kw_pow_rules *r, uint32_t height)
 {   return height >= 1 &amp;&amp; (height - 1) >= r->digishield_height; }
 static int digishield(const kw_pow_rules *r, uint32_t height)
 {   return height >= r->digishield_height; }</code></pre>
@@ -634,8 +1050,11 @@ static int digishield(const kw_pow_rules *r, uint32_t height)
 
   <!-- ───────────────────────── learn: auxpow ───────────────────────── -->
   <section data-route="/learn/auxpow" hidden>
-    <p class="kicker">learn / 7</p>
-    <h1>auxpow</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 7</p>
+      <h1>auxpow</h1>
+      <p class="deck">checking work borrowed from another chain</p>
+    </div>
     <p>since 2014 dogecoin is merge-mined with litecoin. a miner builds a litecoin block whose coinbase commits to a dogecoin block hash; if the litecoin header meets dogecoin's target, that work counts for dogecoin too. a dogecoin header with version bit <code>0x100</code> set is followed by an auxpow proof instead of carrying its own nonce, and its own header hash need not meet any target.</p>
     <p>checking a proof is a chain of "this hash really is inside that". each step is a few lines of <a href="https://github.com/xanimo/koinu/blob/main/net/auxpow.c">net/auxpow.c</a>:</p>
     <ol class="plain">
@@ -646,7 +1065,7 @@ static int digishield(const kw_pow_rules *r, uint32_t height)
       <li><span>after the root come the tree size and a nonce. the size must be 2<sup>branch length</sup>, and this chain's slot must be the one a fixed formula derives from the nonce and the chain id, so one parent cannot commit to two dogecoin blocks in different slots.</span></li>
       <li><span>finally, scrypt of the parent header must meet the dogecoin header's own target.</span></li>
     </ol>
-<pre><code><span class="c">/* Deliberately the same wrapping arithmetic as the reference: it overflows,
+<pre class="blk" data-lang="c" data-src="net/auxpow.c"><code><span class="c">/* Deliberately the same wrapping arithmetic as the reference: it overflows,
    and the result is taken modulo a power of two, so the overflow is part of
    the answer rather than a bug in it. */</span>
 rand = nonce;
@@ -667,17 +1086,20 @@ return rand % (1u &lt;&lt; h);</code></pre>
 
   <!-- ───────────────────────── learn: filters ───────────────────────── -->
   <section data-route="/learn/filters" hidden>
-    <p class="kicker">learn / 8</p>
-    <h1>filters</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 8</p>
+      <h1>filters</h1>
+      <p class="deck">finding your coins without telling a peer which they are</p>
+    </div>
     <p>with headers verified, the wallet has to find which blocks pay or spend its scripts. asking a peer "what about these addresses" tells the peer exactly which addresses are yours. bloom filters (bip37) were meant to blur that and leaked far more than intended. bip157/158 reverses the direction: the peer sends a compact summary of each block and the wallet tests it locally.</p>
 
     <h2>a golomb-coded set</h2>
     <p>for each block, hash every output script and every spent script with siphash-2-4, keyed by the first 16 bytes of the block hash, and map each into [0, N&times;M) where N is the item count and M is 784931:</p>
-<pre><code><span class="c">/* the high half of the 128-bit product: uniform into [0, F) */</span>
+<pre class="blk" data-lang="c" data-src="net/gcs.c"><code><span class="c">/* the high half of the 128-bit product: uniform into [0, F) */</span>
 return (uint64_t)(((__uint128_t)v * (__uint128_t)F) >> 64);</code></pre>
     <p>sort the values and store the gaps between them. gaps in a uniform random set are roughly geometric, which golomb-rice coding packs well: the quotient in unary, the low 19 bits as they are.</p>
     <p>to match, hash your own scripts the same way, sort them, and merge against the decoded stream. a false positive happens about once in 784931 per script tested, and costs one unnecessary block download. there are no false negatives.</p>
-<pre><code>val += gr_next(&amp;b);                          <span class="c">/* next value in the set */</span>
+<pre class="blk" data-lang="c" data-src="net/gcs.c"><code>val += gr_next(&amp;b);                          <span class="c">/* next value in the set */</span>
 while (ti &lt; nitems &amp;&amp; tv[ti] &lt; val) ti++;     <span class="c">/* advance our sorted targets */</span>
 if (ti &lt; nitems &amp;&amp; tv[ti] == val) found = 1;</code></pre>
     <p>two defensive lines are worth noticing. a claimed count larger than the remaining bits is refused, since each element costs at least one bit, which also keeps N&times;M under 2<sup>64</sup>. and the count is read into a <code>uint64_t</code> out-parameter rather than returned as a <code>long</code>, because long is 32 bits on i386 and truncation turned an absurd N into a small one that passed the bound.</p>
@@ -693,7 +1115,7 @@ if (ti &lt; nitems &amp;&amp; tv[ti] == val) found = 1;</code></pre>
 
     <h2>trusting a filter</h2>
     <p>a peer could serve a filter that omits your transaction. so filters are chained the way headers are: each filter header is the double sha-256 of the filter's hash and the previous filter header.</p>
-<pre><code>memcpy(buf, filter_hash, 32);
+<pre class="blk" data-lang="c" data-src="net/cf.c"><code>memcpy(buf, filter_hash, 32);
 memcpy(buf + 32, prev, 32);
 kw_hash256(buf, 64, out);</code></pre>
     <p>koinu checks every filter against the peer's committed filter-header chain, pins the verified tip so a later sync has to connect to it, and checks the chain against anchors compiled into chainparams every 100000 blocks. above the last anchor the base is still the peer's word, and the anchors were generated from one node's cfheaders rather than derived from blocks.</p>
@@ -707,8 +1129,11 @@ kw_hash256(buf, 64, out);</code></pre>
 
   <!-- ───────────────────────── learn: peers ───────────────────────── -->
   <section data-route="/learn/peers" hidden>
-    <p class="kicker">learn / 9</p>
-    <h1>peers</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 9</p>
+      <h1>peers</h1>
+      <p class="deck">choosing a chain when you cannot trust who serves it</p>
+    </div>
     <p>everything so far checks what a peer sends. none of it helps if every peer you reach is serving the same wrong chain. choosing peers is the weakest part of any light wallet, and the useful thing is to know exactly how weak.</p>
 
     <h2>three chains, the heaviest wins</h2>
@@ -717,7 +1142,7 @@ kw_hash256(buf, 64, out);</code></pre>
 
     <h2>a lie that switched the check off</h2>
     <p>comparing chains means holding them in memory, so above a cap the comparison is skipped and one peer is used. the span was sized from the highest height any peer advertised in its version message. one peer claiming 2<sup>31</sup> pushed the span past the cap and collapsed the comparison to <code>peers[0]</code>, which could be that peer.</p>
-<pre><code><span class="c">/* the lower median, so two peers take the smaller: with only two
+<pre class="blk" data-lang="c" data-src="net/chainsel.c"><code><span class="c">/* the lower median, so two peers take the smaller: with only two
    there is nothing to outvote a liar with */</span>
 uint32_t med = h[(nh - 1) / 2];</code></pre>
     <p>a median moves only when most peers agree. the general lesson: any number a peer sends that changes which checks run is an input to the security of those checks.</p>
@@ -733,18 +1158,21 @@ uint32_t med = h[(nh - 1) / 2];</code></pre>
 
   <!-- ───────────────────────── learn: boundary ───────────────────────── -->
   <section data-route="/learn/boundary" hidden>
-    <p class="kicker">learn / 10</p>
-    <h1>boundary</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 10</p>
+      <h1>boundary</h1>
+      <p class="deck">a build that fails if signing code can open a socket</p>
+    </div>
     <p>"the signer never touches the network" is easy to write in a readme and easy to stop being true. koinu turns it into something the build checks.</p>
 
     <h2>two archives</h2>
     <p><code>libkoinu-sign.a</code> holds the keys, derivations, share formats, keystore, transaction builder, psbt code and utxo tracking. <code>libkoinu-chain.a</code> holds peers, headers, auxpow, difficulty and filters, and depends on the signing half rather than the reverse. the check reads what the linker will pull in, the archive's undefined symbols, rather than grepping source, so a call that arrives through a macro, an inline function or a new dependency is caught the same way:</p>
-<pre><code>SOCKETS='socket|socketpair|connect|bind|listen|accept|...|poll|epoll_wait'
+<pre class="blk" data-lang="sh" data-src="test/test_split.sh"><code>SOCKETS='socket|socketpair|connect|bind|listen|accept|...|poll|epoll_wait'
 BAD=$(undef libkoinu-sign.a | grep -xE "($SOCKETS)" || true)</code></pre>
 
     <h2>the control</h2>
     <p>a check that finds nothing might be a check that cannot find anything. glibc versions its symbol references and mach-o prefixes every symbol with an underscore, and a pattern that misses both passes silently. so the script also requires the chain archive to reference some socket call, and fails if it does not, because then the first check proved nothing. after that it links and runs a signer against the signing half alone, which is the claim the symbol check only approximates. moving <code>net/peer.c</code> into the signing half fails on connect, setsockopt and socket.</p>
-<pre><code>GOOD=$(undef libkoinu-chain.a | grep -xE "($SOCKETS)" || true)
+<pre class="blk" data-lang="sh" data-src="test/test_split.sh"><code>GOOD=$(undef libkoinu-chain.a | grep -xE "($SOCKETS)" || true)
 if [ -z "$GOOD" ]; then
     echo "FAIL: libkoinu-chain.a references no socket call, so the check above"
     echo "  proved nothing."</code></pre>
@@ -758,8 +1186,11 @@ if [ -z "$GOOD" ]; then
 
   <!-- ───────────────────────── learn: threats ───────────────────────── -->
   <section data-route="/learn/threats" hidden>
-    <p class="kicker">learn / 11</p>
-    <h1>threats</h1>
+    <div class="head">
+      <p class="kicker"><b>learn</b> <i>/</i> 11</p>
+      <h1>threats</h1>
+      <p class="deck">what all of that defends, and what it does not</p>
+    </div>
     <p>a summary of <a href="https://github.com/xanimo/koinu/blob/main/docs/threat-model.md">docs/threat-model.md</a>, which is the document the readme deliberately does not try to be.</p>
 
     <h2>defended</h2>
@@ -789,30 +1220,191 @@ if [ -z "$GOOD" ]; then
   </section>
 
   <footer>
-    <span>koinu 0.3.0 &middot; mit &middot; free</span>
+    <span data-ver="koinu %s · mit · free">koinu 0.4.0 · mit · free</span>
     <span><a href="https://github.com/xanimo/koinu">github.com/xanimo/koinu</a></span>
   </footer>
-</main>
+  </main>
+</div>
 <script>
+/* ── code blocks: chrome, gutter, tokens ─────────────────────────────── */
 (function () {
+  "use strict";
+  var REPO = "https://github.com/xanimo/koinu/blob/main/";
+  function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  /* one pass per text node, so comment spans already in the markup survive */
+  var RX = {
+    c: /("(?:[^"\\]|\\.)*")|\b(0[xX][0-9a-fA-F]+[uU]?|\d+[uU]?)\b|\b(KW_[A-Z0-9_]+|kw_[a-z0-9_]+)\b|\b(void|int|char|long|short|unsigned|signed|const|static|volatile|struct|union|enum|return|if|else|for|while|do|continue|break|goto|switch|case|default|sizeof|size_t|ssize_t|uint8_t|uint16_t|uint32_t|uint64_t|int32_t|int64_t|__uint128_t)\b/g,
+    sh: /('[^']*'|"[^"]*")|(--?[a-z][a-z0-9-]*)|\b(kw|kwd|kwui|make|git|gpg|cc|pkg-config|grep|echo|undef|then|fi|if|cd)\b|(@[\w./-]+)|\b([A-Z][A-Z0-9_]{1,})\b/g,
+    fig: /("(?:[^"\\]|\\.)*")|\b(OP_[A-Z0-9]+)\b|\b(0[xX][0-9a-fA-F]+|\d+)\b|([─-╿])/g
+  };
+  var CLS = { c: ["s", "n", "a", "k"], sh: ["s", "a", "k", "n", "p"], fig: ["s", "k", "n", "d"] };
+
+  function paint(text, lang) {
+    var rx = RX[lang], cls = CLS[lang], out = "", at = 0, m;
+    rx.lastIndex = 0;
+    while ((m = rx.exec(text))) {
+      out += esc(text.slice(at, m.index));
+      for (var g = 1; g < m.length; g++) {
+        if (m[g] !== undefined) { out += '<span class="' + cls[g - 1] + '">' + esc(m[g]) + "</span>"; break; }
+      }
+      at = m.index + m[0].length;
+    }
+    return out + esc(text.slice(at));
+  }
+
+  function tokenize(code, lang) {
+    var walk = document.createTreeWalker(code, NodeFilter.SHOW_TEXT), nodes = [], n;
+    while ((n = walk.nextNode())) {
+      if (!n.parentElement.closest(".c")) nodes.push(n);   /* leave comments alone */
+    }
+    nodes.forEach(function (t) {
+      var html = paint(t.nodeValue, lang);
+      if (html === esc(t.nodeValue)) return;
+      var frag = document.createElement("span");
+      frag.innerHTML = html;
+      t.parentNode.replaceChild(frag, t);
+      frag.replaceWith.apply(frag, frag.childNodes);
+    });
+  }
+
+  document.querySelectorAll("pre.blk").forEach(function (pre) {
+    var lang = pre.dataset.lang, src = pre.dataset.src, cap = pre.dataset.cap;
+    var fig = document.createElement("figure");
+    fig.className = "blk-wrap";
+    fig.dataset.lang = lang;
+
+    var bar = document.createElement("div");
+    bar.className = "blk-bar";
+    if (src) {
+      bar.insertAdjacentHTML("beforeend",
+        '<a class="blk-src" href="' + REPO + src + '">' + src + "</a>");
+    }
+    bar.insertAdjacentHTML("beforeend",
+      '<span class="blk-tag">' + (lang === "fig" ? "layout" : lang === "sh" ? "shell" : "c") + "</span>");
+    if (lang === "sh") {
+      var cp = document.createElement("button");
+      cp.type = "button"; cp.className = "blk-copy"; cp.textContent = "copy";
+      cp.addEventListener("click", function () {
+        navigator.clipboard.writeText(pre.textContent.replace(/\s+$/, "")).then(function () {
+          cp.textContent = "copied"; setTimeout(function () { cp.textContent = "copy"; }, 1400);
+        }, function () { cp.textContent = "ctrl-c"; });
+      });
+      bar.appendChild(cp);
+    }
+
+    var body = document.createElement("div");
+    body.className = "blk-body";
+    if (lang === "c") {
+      var lines = pre.textContent.replace(/\n$/, "").split("\n").length, g = [];
+      for (var i = 1; i <= lines; i++) g.push(i);
+      body.insertAdjacentHTML("beforeend", '<span class="gut">' + g.join("\n") + "</span>");
+    }
+
+    pre.parentNode.insertBefore(fig, pre);
+    fig.appendChild(bar);
+    body.appendChild(pre);
+    fig.appendChild(body);
+    if (cap) {
+      var fc = document.createElement("figcaption");
+      fc.textContent = cap;
+      fig.appendChild(fc);
+    }
+    tokenize(pre.querySelector("code") || pre, lang);
+  });
+})();
+
+/* ── routing and the rail ────────────────────────────────────────────── */
+(function () {
+  "use strict";
+  var GROUPS = {
+    use: { label: "use", items: [
+      ["/start", "start"], ["/backup", "backup"], ["/spend", "spend"],
+      ["/tools", "tools"], ["/library", "library"], ["/verify", "verify"]] },
+    learn: { label: "learn", items: [
+      ["/learn", "contents"], ["/learn/keys", "keys"], ["/learn/keystore", "keystore"],
+      ["/learn/memory", "memory"], ["/learn/transactions", "transactions"],
+      ["/learn/shares", "shares"], ["/learn/headers", "headers"],
+      ["/learn/auxpow", "auxpow"], ["/learn/filters", "filters"],
+      ["/learn/peers", "peers"], ["/learn/boundary", "boundary"],
+      ["/learn/threats", "threats"]] }
+  };
+  var KW_VERSION = "0.4.0";                     /* one place; koinu/include/kw_version.h is the source */
+  document.querySelectorAll("[data-ver]").forEach(function (e) {
+    e.textContent = e.dataset.ver.replace("%s", KW_VERSION);
+  });
   var sections = document.querySelectorAll("section[data-route]");
-  var links = document.querySelectorAll("nav a[href^='#/']");
+  var top = document.querySelectorAll(".top-nav a[data-grp]");
+  var rail = document.getElementById("rail");
+
+  function groupOf(path) {
+    if (path === "/") return null;
+    return path.indexOf("/learn") === 0 ? "learn" : "use";
+  }
+
+  function drawRail(path, section) {
+    var grp = groupOf(path);
+    rail.innerHTML = "";
+    if (!grp) return;
+    var g = GROUPS[grp], html = '<div class="rail-grp"><p class="rail-lbl">' + g.label + '</p><ul>';
+    g.items.forEach(function (it, i) {
+      var num = grp === "learn" ? (i === 0 ? "&middot;&middot;" : ("0" + i).slice(-2)) : ("0" + (i + 1)).slice(-2);
+      html += '<li><a href="#' + it[0] + '"' + (it[0] === path ? ' aria-current="page"' : "") +
+              '><span class="n">' + num + "</span>" + it[1] + "</a></li>";
+    });
+    html += "</ul></div>";
+
+    var h2s = section ? section.querySelectorAll("h2") : [];
+    if (h2s.length > 1) {
+      html += '<div class="rail-grp"><p class="rail-lbl">on this page</p><ul>';
+      h2s.forEach(function (h, i) {
+        html += '<li><button type="button" data-h2="' + i + '">' + h.textContent + "</button></li>";
+      });
+      html += "</ul></div>";
+    }
+    rail.innerHTML = html;
+    rail.querySelectorAll("button[data-h2]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        h2s[+b.dataset.h2].scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
   function route() {
-    var path = location.hash.replace(/^#/, "") || "/";
-    var hit = false;
+    var path = location.hash.replace(/^#/, "") || "/", hit = null;
     sections.forEach(function (s) {
       var on = s.getAttribute("data-route") === path;
       s.hidden = !on;
-      if (on) hit = true;
+      if (on) hit = s;
     });
-    if (!hit) { sections.forEach(function (s, i) { s.hidden = i !== 0; }); path = "/"; }
-    links.forEach(function (a) {
-      if (a.getAttribute("href") === "#" + path) a.setAttribute("aria-current", "page");
+    if (!hit) { sections.forEach(function (s, i) { s.hidden = i !== 0; }); path = "/"; hit = sections[0]; }
+
+    var grp = groupOf(path);
+    top.forEach(function (a) {
+      if (a.dataset.grp === grp) a.setAttribute("aria-current", "true");
       else a.removeAttribute("aria-current");
     });
+    drawRail(path, hit);
+    files(hit);
     document.title = path === "/" ? "koinu" : "koinu / " + path.slice(1).replace("learn/", "");
     window.scrollTo(0, 0);
   }
+
+  /* every distinct source file a chapter touches, collected once into its head */
+  function files(section) {
+    var head = section.querySelector(".head");
+    if (!head || head.querySelector(".files")) return;
+    var seen = {}, list = [];
+    section.querySelectorAll('.src a, .blk-src, a[href*="/blob/main/"]').forEach(function (a) {
+      var p = a.getAttribute("href").split("/blob/main/")[1];
+      if (!p || seen[p]) return;
+      seen[p] = 1; list.push([p, a.getAttribute("href")]);
+    });
+    if (!list.length) return;
+    head.insertAdjacentHTML("beforeend", '<p class="files"><em>reads</em>' +
+      list.map(function (f) { return '<a href="' + f[1] + '">' + f[0] + "</a>"; }).join("") + "</p>");
+  }
+
   window.addEventListener("hashchange", route);
   route();
 })();
@@ -838,6 +1430,8 @@ if [ -z "$GOOD" ]; then
   function num(p, n) { var v = val(p, n); return /^0x/i.test(v) ? parseInt(v, 16) : parseInt(v, 10) || 0; }
   function hexn(p, n) { return parseInt(val(p, n).replace(/^0x/i, ""), 16) >>> 0; }
   function err(o) { return kv([["refused", o.error, "bad"]]); }
+  /* a refusal that IS the lesson, not a fault: painted apart from a real error */
+  function want(label, text) { return kv([[label, text, "want"]]); }
   function doge(v) { var s = String(v).padStart(9, "0"); return s.slice(0, -8) + "." + s.slice(-8) + " DOGE"; }
   function big(h) { try { return BigInt("0x" + h).toLocaleString("en-US"); } catch (e) { return h; } }
 
@@ -862,6 +1456,7 @@ if [ -z "$GOOD" ]; then
       var o = K.call("kwj_seal", val(p, "secret"), p.querySelector('[name="pass"]').value, num(p, "t"), num(p, "m"));
       if (o.error) return err(o);
       p.dataset.blob = o.blob;
+      p.dataset.tampered = "";
       return layout(o.blob, "sealed in " + Math.round(performance.now() - t0) + " ms");
     },
     open: function (p) {
@@ -869,12 +1464,26 @@ if [ -z "$GOOD" ]; then
       var t0 = performance.now();
       var o = K.call("kwj_open", p.dataset.blob, p.querySelector('[name="pass"]').value);
       var ms = Math.round(performance.now() - t0) + " ms";
-      return layout(p.dataset.blob, p.dataset.note || "") + kv(o.ok
-        ? [["opened", o.secret + "   (" + ms + ")", "good"]]
-        : [["opened", "no: the tag did not verify, nothing was decrypted (" + ms + ")", "bad"]]);
+      /* a flipped byte must fail, so keep saying so until it is sealed again */
+      var bent = p.dataset.tampered;
+      if (o.ok) p.dataset.goodms = ms;            /* keep an honest open to compare against */
+      var cost = bent && p.dataset.goodms
+        ? [["kdf still ran", ms + " here, " + p.dataset.goodms + " for a good open: the tag is only checkable once the key " +
+            "exists, so the work is spent either way. raise m_cost and the refusal gets slower, not faster", "want"]]
+        : [];
+      return layout(p.dataset.blob, p.dataset.note || (bent ? "a byte is still flipped. press seal to start over" : ""), bent ? "want" : "") +
+        kv((o.ok
+          ? [["opened", o.secret + "   (" + ms + ")", "good"]]
+          : [["opened", "no: the tag did not verify, nothing was decrypted (" + ms + ")", bent ? "want" : "bad"]]).concat(cost));
     },
-    flipkdf: function (p) { return flip(p, 12, "flipped byte 12, the lowest byte of m_cost: the kdf runs with different parameters and derives a different key"); },
-    flipct: function (p) { return flip(p, 53, "flipped byte 53, inside the ciphertext"); },
+    flipkdf: function (p) {
+      return flip(p, 12, "byte 12 is the low byte of m_cost, in the header. the header is not encrypted, but it is " +
+        "authenticated, so editing a kdf parameter both derives a different key and breaks the tag: the cost cannot be lowered quietly");
+    },
+    flipct: function (p) {
+      return flip(p, 53, "byte 53 is inside the ciphertext. the key is still the right one; the tag covers the payload too, " +
+        "so one flipped bit is refused rather than decrypted into something else");
+    },
 
     tx: function (p) {
       var o = K.call("kwj_tx", val(p, "raw").replace(/\s+/g, ""), num(p, "vin"), val(p, "spk"));
@@ -910,7 +1519,7 @@ if [ -z "$GOOD" ]; then
       return null;
     },
 
-    header: function (p) {
+    header: function (p, why) {
       var o = K.call("kwj_header", val(p, "hdr").replace(/\s+/g, ""));
       if (o.error) return err(o);
       return kv([
@@ -918,7 +1527,8 @@ if [ -z "$GOOD" ]; then
         ["time", o.time + "  " + new Date(o.time * 1000).toISOString().replace("T", " ").slice(0, 19) + " utc"],
         ["bits", o.bits], ["nonce", o.nonce],
         ["block hash", o.hash + "  sha256d"], ["pow hash", o.pow + "  scrypt"],
-        ["target", o.target || ""], ["meets target", o.meets ? "yes" : "no", o.meets ? "good" : "bad"]
+        ["target", o.target || ""],
+        ["meets target", o.meets ? "yes" : "no" + (why ? ". " + why : ""), o.meets ? "good" : (why ? "want" : "bad")]
       ]);
     },
     nonce: function (p) {
@@ -927,20 +1537,23 @@ if [ -z "$GOOD" ]; then
       var n = (parseInt(h.slice(152, 160).match(/../g).reverse().join(""), 16) + 1) >>> 0;
       var le = n.toString(16).padStart(8, "0").match(/../g).reverse().join("");
       set(p, "hdr", h.slice(0, 152) + le);
-      return H.header(p);
+      return H.header(p, "that is the point: one more nonce and the work is gone. press reset to go back");
     },
     genesis: function (p) { set(p, "hdr", p.querySelector('[name="hdr"]').defaultValue); return H.header(p); },
 
-    bits: function (p) {
+    bits: function (p, why) {
       var o = K.call("kwj_bits", hexn(p, "bits"));
-      if (o.error) return err(o);
+      if (o.error) return why ? want("refused", o.error + ". " + why) : err(o);
       return kv([["exponent", o.exponent], ["mantissa", o.mantissa],
         ["target", o.target], ["work", o.work], ["work, decimal", big(o.work) + " hashes expected"],
         ["re-encoded", o.roundtrip]]);
     },
     bitsgen: function (p) { set(p, "bits", "1e0ffff0"); return H.bits(p); },
     bits6m: function (p) { set(p, "bits", "192fa398"); return H.bits(p); },
-    bitsbad: function (p) { set(p, "bits", "22001234"); return H.bits(p); },
+    bitsbad: function (p) {
+      set(p, "bits", "22001234");
+      return H.bits(p, "that is the trap: a small exponent with a big mantissa still runs past bit 256");
+    },
 
     retarget: function (p) {
       var o = K.call("kwj_retarget", num(p, "height"), hexn(p, "lb"), num(p, "lt"), num(p, "ft"));
@@ -970,19 +1583,20 @@ if [ -z "$GOOD" ]; then
     }
   };
 
-  function layout(hex, note) {
+  function layout(hex, note, cls) {
     var parts = [[0, 4, "magic"], [4, 4, "version, kdf, aead, reserved"], [8, 12, "t, m, p"], [20, 16, "salt"], [36, 12, "nonce"], [48, 4, "ct_len"]];
     var n = hex.length / 2, rows = parts.map(function (q) { return [q[0] + "  " + q[2], hex.slice(q[0] * 2, (q[0] + q[1]) * 2)]; });
     rows.push([52 + "  ciphertext", hex.slice(104, (n - 16) * 2)]);
     rows.push([(n - 16) + "  tag", hex.slice((n - 16) * 2)]);
-    if (note) rows.push(["", note]);
+    if (note) rows.unshift(["state", note, cls || ""]);   /* leads, so it is read */
     return kv(rows);
   }
   function flip(p, at, why) {
     if (!p.dataset.blob) H.seal(p);
     var b = p.dataset.blob, x = (parseInt(b.slice(at * 2, at * 2 + 2), 16) ^ 1).toString(16).padStart(2, "0");
     p.dataset.blob = b.slice(0, at * 2) + x + b.slice(at * 2 + 2);
-    p.dataset.note = why + ". seal again to start over.";
+    p.dataset.tampered = "1";
+    p.dataset.note = why + ". press seal to start over";
     var r = H.open(p); p.dataset.note = ""; return r;
   }
   function shareList(list) {
