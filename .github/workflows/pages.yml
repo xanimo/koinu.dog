@@ -56,10 +56,14 @@ jobs:
       # itself rather than calling out to google for. The repository root also
       # holds kw_web.c, build.sh and the whole koinu submodule, and none of that
       # belongs on a web server.
+      #
+      # CNAME is the exception: it is not fetched, it tells Pages the custom
+      # domain. A deploy whose artifact lacks it can clear the setting, so it
+      # ships with every build rather than living only in the repository UI.
       - name: stage the site
         run: |
           mkdir -p _site
-          cp index.html koinu.js koinu.wasm _site/
+          cp index.html koinu.js koinu.wasm CNAME _site/
           cp -r fonts _site/
           ls -lR _site
 
