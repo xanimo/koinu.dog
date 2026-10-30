@@ -1016,7 +1016,7 @@ kw_u256_add(out, &amp;one);</code></pre>
 
 
     <h2>the retarget, and its off-by-one</h2>
-    <p>a header's target is not its own claim. it must equal what the retarget rule derives from the headers before it. dogecoin retargeted every 240 blocks (four hours at a minute a block) until digishield at 145000, and every block after, with an amplitude filter that moves only an eighth of the way toward the measured time and clamps the result:</p>
+    <p>a header's target is not its own claim. no target may be easier than the network's powLimit, which is the same rule everywhere. past that it must equal what the retarget rule derives from the headers before it, on mainnet: testnet and regtest allow minimum-difficulty blocks, so the derived value is not demanded of them rather than demanded wrongly. dogecoin retargeted every 240 blocks (four hours at a minute a block) until digishield at 145000, and every block after, with an amplitude filter that moves only an eighth of the way toward the measured time and clamps the result:</p>
 <pre class="blk" data-lang="c" data-src="net/pow.c"><code>actual = span + (actual - span) / 8;   <span class="c">/* the amplitude filter */</span>
 lo = span - span / 4;
 hi = span + span / 2;</code></pre>
