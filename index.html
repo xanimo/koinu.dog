@@ -618,10 +618,10 @@ kw send  --tx @tx.hex --node NODE</code></pre>
     <p>two runs so the one holding the key never opens a socket. passing both halves at once is refused, and the signing step drops any output not locked to the key it holds.</p>
 
     <h2>multisig</h2>
-<pre class="blk" data-lang="sh"><code>kw cosign --tx HEX --redeem HEX --wif @k           <span class="c"># one signature for the counterparty</span>
-kw cosign --tx HEX --redeem HEX --wif @k --finish  <span class="c"># assemble, checking every signature</span>
+<pre class="blk" data-lang="sh"><code>kw cosign --tx HEX --redeem HEX --utxo HEX --wif @k           <span class="c"># one signature for the counterparty</span>
+kw cosign --tx HEX --redeem HEX --utxo HEX --wif @k --finish  <span class="c"># assemble, checking every signature</span>
 kw psbt create | tx | sign | combine | sigs | finalize | extract</code></pre>
-    <p>cosign --finish verifies each collected signature against the sighash and refuses the set if one fails. psbt finalize writes the scriptSig it is given, because scripts like a payment channel's OP_IF branch do not classify for a standard finalizer; it cannot verify that, so the caller does. combine refuses a conflict rather than picking a side, and a psbt carrying segwit or unknown fields is refused rather than parsed with those fields dropped.</p>
+    <p><code>--utxo</code> is the raw transaction holding the coin being spent, and without it nothing ties <code>--redeem</code> to the coin it is meant to lock. cosign --finish verifies each collected signature against the sighash and refuses the set if one fails. psbt finalize writes the scriptSig it is given, because scripts like a payment channel's OP_IF branch do not classify for a standard finalizer; it cannot verify that, so the caller does. combine refuses a conflict rather than picking a side, and a psbt carrying segwit or unknown fields is refused rather than parsed with those fields dropped.</p>
     <div class="pager"><a href="#/backup"><span>previous</span>backup</a><a class="r" href="#/tools"><span>next</span>tools</a></div>
   </section>
 
